@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
+import com.octo.android.robospice.JacksonGoogleHttpClientSpiceService;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.SpiceService;
 import com.octo.android.robospice.persistence.CacheManager;
@@ -36,14 +37,27 @@ public class MainActivity extends Activity {
 
     private static final Logger logger = LoggerManager.getLogger();
 
+    private final SpiceManager spiceManager = new SpiceManager(JacksonGoogleHttpClientSpiceService.class);
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        spiceManager.start(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        spiceManager.shouldStop();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment())
+                    .add(R.id.container, new PlaceholderFragment(spiceManager))
                     .commit();
         }
 
@@ -81,11 +95,13 @@ public class MainActivity extends Activity {
         private View rootView;
         private TextView locationText;
         private LocationHelper locationHelper;
-        private SpiceManager spiceManager = new SpiceManager(EtchSpiceService.class);
         private Location location;
+        private SpiceManager spiceManager;
 
-        public PlaceholderFragment() {
+        public PlaceholderFragment(SpiceManager spiceManager) {
+            this.spiceManager = spiceManager;
         }
+
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -109,6 +125,7 @@ public class MainActivity extends Activity {
             locationHelper.fetchLocation(timeoutMs, LocationHelper.Accuracy.FINE, new LocationHelper.LocationResponse() {
                 @Override
                 public void onLocationAquired(Location l) {
+                    l.getAccuracy();
                     location = l;
                     updateLocation(l);
                 }
@@ -118,7 +135,7 @@ public class MainActivity extends Activity {
         }
 
         private void updateLocation(final Location location) {
-            String text = location.getLatitude() + " " + location.getLongitude();
+            String text = location.getLatitude() + " " + location.getLongitude() + ", accuracy: " + location.getAccuracy();
             locationText.setText(text);
             spiceManager.execute(new EtchRequest(location), new RequestListener<Etch>() {
 

@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 import kurtome.etch.app.domain.Etch;
+import org.apache.commons.lang3.StringUtils;
 
 public class DrawingView extends View {
 
@@ -76,6 +77,12 @@ public class DrawingView extends View {
     }
 
     public void setCurrentEtch(Etch etch) {
+        if (StringUtils.isNotBlank(etch.getBase64Image())) {
+            drawEtchToCanvas(etch);
+        }
+    }
+
+    private void drawEtchToCanvas(Etch etch) {
         byte[] bytes = Base64.decodeBase64(etch.getBase64Image());
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         drawCanvas.drawBitmap(bitmap, 0, 0, new Paint());

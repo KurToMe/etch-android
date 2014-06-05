@@ -3,6 +3,7 @@ package kurtome.etch.app.robospice;
 import android.location.Location;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.octo.android.robospice.request.googlehttpclient.GoogleHttpClientSpiceRequest;
 import kurtome.etch.app.domain.Etch;
