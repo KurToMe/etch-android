@@ -3,27 +3,26 @@ package kurtome.etch.app.robospice;
 import android.location.Location;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.octo.android.robospice.request.googlehttpclient.GoogleHttpClientSpiceRequest;
 import kurtome.etch.app.domain.Etch;
 
-public class EtchRequest extends GoogleHttpClientSpiceRequest<Etch> {
-    private final Location _location;
+public class GetEtchRequest extends GoogleHttpClientSpiceRequest<Etch> {
+    private final Location location;
 
-    private static final String BASE_URL = "http://etch.herokuapp.com/json/etch";
+    public static final String BASE_URL = "http://etch.herokuapp.com/json/etch";
 
-    public EtchRequest(Location location) {
+    public GetEtchRequest(Location location) {
         super(Etch.class);
-        _location = location;
+        this.location = location;
     }
 
 
     @Override
     public Etch loadDataFromNetwork() throws Exception {
         GenericUrl genericUrl = new GenericUrl(BASE_URL);
-        genericUrl.put("latitude", _location.getLatitude());
-        genericUrl.put("longitude", _location.getLongitude());
+        genericUrl.put("latitude", location.getLatitude());
+        genericUrl.put("longitude", location.getLongitude());
 
         HttpRequest request = getHttpRequestFactory()
                 .buildGetRequest(genericUrl);

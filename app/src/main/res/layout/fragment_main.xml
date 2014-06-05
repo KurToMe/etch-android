@@ -1,33 +1,68 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFCCCCCC"
-    android:orientation="vertical"
-    tools:context=".MainActivity" >
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#FFCCCCCC"
+              android:orientation="vertical"
+              tools:context=".MainActivity">
 
     <TextView
             android:id="@+id/location_txt"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"/>
 
     <kurtome.etch.app.drawing.DrawingView
-        android:id="@+id/drawing"
-        android:layout_width="fill_parent"
-        android:layout_height="0dp"
-        android:layout_marginBottom="3dp"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginTop="3dp"
-        android:layout_weight="1"
-        android:background="#FFFFFFFF" />
+            android:id="@+id/drawing"
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_marginBottom="3dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginTop="3dp"
+            android:layout_weight="1"
+            android:background="#FFFFFFFF"/>
 
-    <ImageButton
-        android:id="@+id/opacity_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:contentDescription="opacity"
-        android:src="@drawable/opacity" />
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:tools="http://schemas.android.com/tools"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:background="#FFCCCCCC"
+                  android:orientation="horizontal"
+                  tools:context=".MainActivity">
+
+        <ImageButton
+                android:id="@+id/opacity_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="opacity"
+                android:src="@drawable/opacity"/>
+
+
+        <ImageButton
+                android:id="@+id/save_etch_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="save"
+                android:src="@android:drawable/ic_menu_save"/>
+
+        <ImageButton
+                android:id="@+id/color_white_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="color white"
+                android:src="@android:drawable/ic_menu_edit"/>
+
+        <ImageButton
+                android:id="@+id/color_black_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="color black"
+                android:src="@android:drawable/ic_menu_edit" android:background="#ff165547"/>
+    </LinearLayout>
+
 
 </LinearLayout>

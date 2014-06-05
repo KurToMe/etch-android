@@ -9,10 +9,11 @@ import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 import kurtome.etch.app.domain.Etch;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayOutputStream;
+
 public class DrawingView extends View {
 
     private Path drawPath;
-    private Paint canvasPaint;
     private Canvas drawCanvas;
     private Bitmap canvasBitmap;
     private DrawingBrush currentBrush;
@@ -25,9 +26,7 @@ public class DrawingView extends View {
     private void setupDrawing() {
         drawPath = new Path();
         currentBrush = new DrawingBrush();
-        canvasPaint = new Paint(Paint.DITHER_FLAG);
-
-
+        currentBrush.getPaint();
     }
 
     //view assigned size
@@ -42,7 +41,7 @@ public class DrawingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawBitmap(canvasBitmap, 0, 0, canvasPaint);
+        canvas.drawBitmap(canvasBitmap, 0, 0, currentBrush.getPaint());
         canvas.drawPath(drawPath, currentBrush.getPaint());
     }
 
@@ -72,19 +71,33 @@ public class DrawingView extends View {
         return true;
     }
 
+    public void setPaintColor(int color) {
+        currentBrush.setColor(color);
+    }
+
+
     public DrawingBrush getDrawingBrush()  {
         return currentBrush;
     }
 
-    public void setCurrentEtch(Etch etch) {
-        if (StringUtils.isNotBlank(etch.getBase64Image())) {
-            drawEtchToCanvas(etch);
+    public void setCurrentImage(String base64Image) {
+        if (StringUtils.isNotBlank(base64Image)) {
+            drawEtchToCanvas(base64Image);
         }
     }
 
-    private void drawEtchToCanvas(Etch etch) {
-        byte[] bytes = Base64.decodeBase64(etch.getBase64Image());
+    private void drawEtchToCanvas(String base64Image) {
+        byte[] bytes = Base64.decodeBase64(base64Image);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         drawCanvas.drawBitmap(bitmap, 0, 0, new Paint());
+        invalidate();
+    }
+
+    public String getCurrentImage() {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        canvasBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        byte[] bytes = stream.toByteArray();
+        String base64 = Base64.encodeBase64String(bytes);
+        return base64;
     }
 }

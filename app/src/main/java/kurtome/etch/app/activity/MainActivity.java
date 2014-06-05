@@ -1,8 +1,8 @@
 package kurtome.etch.app.activity;
 
 import android.app.Activity;
-import android.app.Application;
 import android.app.Fragment;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,9 +14,6 @@ import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
 import com.octo.android.robospice.JacksonGoogleHttpClientSpiceService;
 import com.octo.android.robospice.SpiceManager;
-import com.octo.android.robospice.SpiceService;
-import com.octo.android.robospice.persistence.CacheManager;
-import com.octo.android.robospice.persistence.exception.CacheCreationException;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
 import kurtome.etch.app.R;
@@ -25,12 +22,14 @@ import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
+import kurtome.etch.app.domain.SaveEtchCommand;
 import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.drawing.DrawingView;
 import kurtome.etch.app.location.LocationHelper;
-import kurtome.etch.app.robospice.EtchRequest;
-import kurtome.etch.app.robospice.EtchSpiceService;
+import kurtome.etch.app.robospice.GetEtchRequest;
+import kurtome.etch.app.robospice.SaveEtchRequest;
 
 
 public class MainActivity extends Activity {
@@ -92,6 +91,9 @@ public class MainActivity extends Activity {
         private DrawingView drawingView;
         private DrawingBrush drawingBrush;
         private ImageButton opacityButton;
+        private ImageButton saveEtchButton;
+        private ImageButton whiteButton;
+        private ImageButton blackButton;
         private View rootView;
         private TextView locationText;
         private LocationHelper locationHelper;
@@ -110,6 +112,15 @@ public class MainActivity extends Activity {
 
             drawingView = (DrawingView) rootView.findViewById(R.id.drawing);
             drawingBrush = drawingView.getDrawingBrush();
+
+            saveEtchButton = (ImageButton) rootView.findViewById(R.id.save_etch_btn);
+            saveEtchButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    saveEtch();
+                }
+            });
+
             opacityButton = (ImageButton) rootView.findViewById(R.id.opacity_btn);
             opacityButton.setOnClickListener(new OnClickListener() {
                 @Override
@@ -117,6 +128,23 @@ public class MainActivity extends Activity {
                     showOpacityDialog();
                 }
             });
+
+            whiteButton = (ImageButton) rootView.findViewById(R.id.color_white_btn);
+            whiteButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    drawingView.setPaintColor(Color.WHITE);
+                }
+            });
+
+            blackButton = (ImageButton) rootView.findViewById(R.id.color_black_btn);
+            blackButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    drawingView.setPaintColor(Color.BLACK);
+                }
+            });
+
 
             locationText = (TextView) rootView.findViewById(R.id.location_txt);
 
@@ -134,10 +162,39 @@ public class MainActivity extends Activity {
             return rootView;
         }
 
+        private void saveEtch() {
+            if (location == null) {
+                logger.d("Unknown location, can't set etch.");
+                return;
+            }
+
+            final String image = drawingView.getCurrentImage();
+
+            final SaveEtchCommand saveEtchCommand = new SaveEtchCommand();
+            saveEtchCommand.setBase64Image(image);
+            Coordinates coordinates = new Coordinates();
+            coordinates.setLatitude(location.getLatitude());
+            coordinates.setLongitude(location.getLongitude());
+            saveEtchCommand.setCoordinates(coordinates);
+
+            spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
+
+                @Override
+                public void onRequestFailure(SpiceException e) {
+                    logger.e(e, "Error getting etch for location {}.", location);
+                }
+
+                @Override
+                public void onRequestSuccess(Void v) {
+                    logger.d("Saved etch {}.", saveEtchCommand);
+                }
+            });
+        }
+
         private void updateLocation(final Location location) {
             String text = location.getLatitude() + " " + location.getLongitude() + ", accuracy: " + location.getAccuracy();
             locationText.setText(text);
-            spiceManager.execute(new EtchRequest(location), new RequestListener<Etch>() {
+            spiceManager.execute(new GetEtchRequest(location), new RequestListener<Etch>() {
 
                 @Override
                 public void onRequestFailure(SpiceException e) {
@@ -146,7 +203,7 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onRequestSuccess(Etch etch) {
-                    drawingView.setCurrentEtch(etch);
+                    drawingView.setCurrentImage(etch.getBase64Image());
                 }
             });
         }

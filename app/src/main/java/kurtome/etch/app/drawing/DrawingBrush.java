@@ -7,7 +7,7 @@ public class DrawingBrush {
 
     public static final int MAX_ALPHA = 255;
 
-    private final Paint paint = new Paint();
+    private Paint paint = new Paint(Paint.DITHER_FLAG);
 
     private int color = Color.DKGRAY;
     private int alpha = 200;
@@ -36,7 +36,15 @@ public class DrawingBrush {
     }
 
     public void setAlpha(int newAlpha) {
+        this.paint = new Paint(paint);
         alpha = Math.round(((float) newAlpha / 100) * MAX_ALPHA);
+        paint.setAlpha(alpha);
+    }
+
+    public void setColor(int color) {
+        this.paint = new Paint(paint);
+        this.color = color;
+        paint.setColor(color);
         paint.setAlpha(alpha);
     }
 }
