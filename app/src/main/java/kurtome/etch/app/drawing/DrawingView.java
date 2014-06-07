@@ -26,7 +26,6 @@ public class DrawingView extends View {
     private void setupDrawing() {
         drawPath = new Path();
         currentBrush = new DrawingBrush();
-        currentBrush.getPaint();
     }
 
     //view assigned size
@@ -62,7 +61,7 @@ public class DrawingView extends View {
             case MotionEvent.ACTION_UP:
                 drawPath.lineTo(touchX, touchY);
                 drawCanvas.drawPath(drawPath, currentBrush.getPaint());
-                drawPath.reset();
+                drawPath = new Path();
                 break;
             default:
                 return false;
@@ -89,7 +88,7 @@ public class DrawingView extends View {
     private void drawEtchToCanvas(String base64Image) {
         byte[] bytes = Base64.decodeBase64(base64Image);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        drawCanvas.drawBitmap(bitmap, 0, 0, new Paint());
+        drawCanvas.drawBitmap(bitmap, 0, 0, new Paint(Paint.DITHER_FLAG));
         invalidate();
     }
 

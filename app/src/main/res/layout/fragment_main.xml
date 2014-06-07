@@ -11,16 +11,28 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"/>
 
-    <kurtome.etch.app.drawing.DrawingView
-            android:id="@+id/drawing"
-            android:layout_width="fill_parent"
-            android:layout_height="0dp"
-            android:layout_marginBottom="3dp"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="5dp"
-            android:layout_marginTop="3dp"
-            android:layout_weight="1"
-            android:background="#FFFFFFFF"/>
+    <kurtome.etch.app.layout.SquareLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:tools="http://schemas.android.com/tools"
+                  android:layout_width="fill_parent"
+                  android:layout_height="fill_parent"
+                  android:background="#FFCCCCCC"
+                  android:orientation="vertical"
+                  tools:context=".MainActivity">
+
+        <kurtome.etch.app.drawing.DrawingView
+                android:id="@+id/drawing"
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="3dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginTop="3dp"
+                android:layout_weight="1"
+                android:background="#FFFFFFFF"/>
+
+                  </kurtome.etch.app.layout.SquareLayout>
+
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
                   xmlns:tools="http://schemas.android.com/tools"
