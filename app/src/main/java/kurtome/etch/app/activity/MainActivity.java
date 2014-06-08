@@ -22,6 +22,8 @@ import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialog;
+import kurtome.etch.app.colorpickerview.view.ColorPickerView;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
@@ -83,9 +85,6 @@ public class MainActivity extends Activity {
     }
 
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
     public static class PlaceholderFragment extends Fragment {
 
         private DrawingView drawingView;
@@ -125,7 +124,7 @@ public class MainActivity extends Activity {
             opacityButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    showOpacityDialog();
+                    showColorDialog();
                 }
             });
 
@@ -160,6 +159,21 @@ public class MainActivity extends Activity {
             });
 
             return rootView;
+        }
+
+        private void showColorDialog() {
+            ColorPickerDialog dialog = new ColorPickerDialog(getActivity(), drawingBrush.getColor(), new ColorPickerView.OnColorChangedListener() {
+                @Override
+                public void onColorChanged(int newColor) {
+                    setColor(newColor);
+                }
+            });
+            dialog.setAlphaSliderVisible(true);
+            dialog.show();
+        }
+
+        private void setColor(int color) {
+            drawingBrush.setColor(color);
         }
 
         private void saveEtch() {
@@ -206,36 +220,6 @@ public class MainActivity extends Activity {
                     drawingView.setCurrentImage(etch.getBase64Image());
                 }
             });
-        }
-
-        private void showOpacityDialog() {
-            final Dialog seekDialog = new Dialog(this.getActivity());
-            seekDialog.setTitle("Opacity level:");
-            seekDialog.setContentView(R.layout.opacity_chooser);
-            final TextView seekTxt = (TextView) seekDialog.findViewById(R.id.opq_txt);
-            final SeekBar seekOpq = (SeekBar) seekDialog.findViewById(R.id.opacity_seek);
-            seekOpq.setMax(100);
-
-            int currLevel = drawingBrush.getAlpha();
-            seekTxt.setText(currLevel + "%");
-            seekOpq.setProgress(currLevel);
-            seekOpq.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    seekTxt.setText(Integer.toString(progress) + "%");
-                    drawingBrush.setAlpha(seekOpq.getProgress());
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-                }
-
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                }
-            });
-
-            seekDialog.show();
         }
 
     }

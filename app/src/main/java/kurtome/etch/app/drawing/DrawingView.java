@@ -6,7 +6,6 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
-import kurtome.etch.app.domain.Etch;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -17,6 +16,7 @@ public class DrawingView extends View {
     private Canvas drawCanvas;
     private Bitmap canvasBitmap;
     private DrawingBrush currentBrush;
+    private Paint basicPaint = DrawingBrush.createBasicPaint();
 
     public DrawingView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -36,11 +36,12 @@ public class DrawingView extends View {
         drawCanvas = new Canvas(canvasBitmap);
     }
 
+
     //draw view
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawBitmap(canvasBitmap, 0, 0, currentBrush.getPaint());
+        canvas.drawBitmap(canvasBitmap, 0, 0, basicPaint);
         canvas.drawPath(drawPath, currentBrush.getPaint());
     }
 
@@ -88,7 +89,7 @@ public class DrawingView extends View {
     private void drawEtchToCanvas(String base64Image) {
         byte[] bytes = Base64.decodeBase64(base64Image);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        drawCanvas.drawBitmap(bitmap, 0, 0, new Paint(Paint.DITHER_FLAG));
+        drawCanvas.drawBitmap(bitmap, 0, 0, basicPaint);
         invalidate();
     }
 
