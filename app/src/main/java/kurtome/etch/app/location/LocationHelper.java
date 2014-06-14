@@ -7,7 +7,6 @@ import android.location.Location;
 import java.util.List;
 
 import android.content.Context;
-import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -43,7 +42,7 @@ public class LocationHelper implements LocationListener
 	private LocationResponse mCallback = null;
 	private Accuracy mAccuracy = Accuracy.FINE;
 	private final Handler mTimeoutHandler = new Handler();
-	private float mAccuracyFloat = 30.0f;
+	private float mAccuracyMeters = 30.0f;
 
 	private final Runnable mTimeoutRunnable = new Runnable()
 	{
@@ -110,7 +109,7 @@ public class LocationHelper implements LocationListener
 	 */
 	public void setAccuracy(float accuracy)
 	{
-		mAccuracyFloat = accuracy;
+		mAccuracyMeters = accuracy;
 	}
 
 	/**
@@ -120,7 +119,7 @@ public class LocationHelper implements LocationListener
 	 */
 	public float getAccuracy()
 	{
-		return mAccuracyFloat;
+		return mAccuracyMeters;
 	}
 
 	/**
@@ -226,13 +225,13 @@ public class LocationHelper implements LocationListener
 			{
 				mCallback.onLocationChanged(location);
 
-				if (mAccuracy == Accuracy.FINE && (!location.hasAccuracy() || location.getAccuracy() > mAccuracyFloat))
+				if (mAccuracy == Accuracy.FINE && (!location.hasAccuracy() || location.getAccuracy() > mAccuracyMeters))
 					return;
 				if (!hasAquired)
 				{
 					mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
 					mLocationManager.removeUpdates(this);
-					mCallback.onLocationAquired(location);
+					mCallback.onLocationAcquired(location);
 					hasAquired = true;
 				}
 			}
@@ -303,7 +302,7 @@ public class LocationHelper implements LocationListener
 		 * @param l
 		 *            The location recieved
 		 */
-		public abstract void onLocationAquired(Location l);
+		public abstract void onLocationAcquired(Location l);
 
 		/**
 		 * Called when the request timed out

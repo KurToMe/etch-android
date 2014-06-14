@@ -6,29 +6,22 @@ public class DrawingBrush {
 
     public static final int MAX_ALPHA = 255;
 
-    private Paint paint = createDefaultPaint();
-
     public static Paint createBasicPaint() {
         Paint paint = new Paint(Paint.DITHER_FLAG);
         paint.setAntiAlias(true);
         return paint;
     }
 
-    private static Paint createDefaultPaint() {
-        Paint paint = createBasicPaint();
+    private Paint paint;
+
+    public DrawingBrush() {
+        paint = createBasicPaint();
         paint.setStrokeWidth(10);
         paint.setStyle(Paint.Style.STROKE);
+        paint.setAlpha(150);
         paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setColor(Color.DKGRAY);
-        return paint;
-    }
-
-    public DrawingBrush() {
-        updatePaint();
-    }
-
-    private void updatePaint() {
     }
 
     public Paint getPaint() {

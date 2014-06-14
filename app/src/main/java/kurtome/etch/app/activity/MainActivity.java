@@ -2,7 +2,6 @@ package kurtome.etch.app.activity;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,18 +11,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
-import com.octo.android.robospice.JacksonGoogleHttpClientSpiceService;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
+import dagger.ObjectGraph;
 import kurtome.etch.app.R;
-import android.app.Dialog;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialog;
 import kurtome.etch.app.colorpickerview.view.ColorPickerView;
+import kurtome.etch.app.dagger.MainModule;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
@@ -33,12 +31,21 @@ import kurtome.etch.app.location.LocationHelper;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
 
+import javax.inject.Inject;
+
 
 public class MainActivity extends Activity {
 
     private static final Logger logger = LoggerManager.getLogger();
 
-    private final SpiceManager spiceManager = new SpiceManager(JacksonGoogleHttpClientSpiceService.class);
+    private ObjectGraph objectGraph;
+
+    public MainActivity() {
+        objectGraph = ObjectGraph.create(new MainModule(this));
+        objectGraph.inject(this);
+    }
+
+    @Inject SpiceManager spiceManager;
 
     @Override
     protected void onStart() {
@@ -56,9 +63,12 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        PlaceholderFragment fragment = new PlaceholderFragment();
+        objectGraph.inject(fragment);
+
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment(spiceManager))
+                    .add(R.id.container, fragment)
                     .commit();
         }
 
@@ -89,19 +99,14 @@ public class MainActivity extends Activity {
 
         private DrawingView drawingView;
         private DrawingBrush drawingBrush;
-        private ImageButton opacityButton;
+        private ImageButton colorButton;
         private ImageButton saveEtchButton;
-        private ImageButton whiteButton;
-        private ImageButton blackButton;
         private View rootView;
         private TextView locationText;
         private LocationHelper locationHelper;
         private Location location;
-        private SpiceManager spiceManager;
 
-        public PlaceholderFragment(SpiceManager spiceManager) {
-            this.spiceManager = spiceManager;
-        }
+        @Inject SpiceManager spiceManager;
 
 
         @Override
@@ -120,38 +125,22 @@ public class MainActivity extends Activity {
                 }
             });
 
-            opacityButton = (ImageButton) rootView.findViewById(R.id.opacity_btn);
-            opacityButton.setOnClickListener(new OnClickListener() {
+            colorButton = (ImageButton) rootView.findViewById(R.id.color_chooser_button);
+            colorButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     showColorDialog();
                 }
             });
 
-            whiteButton = (ImageButton) rootView.findViewById(R.id.color_white_btn);
-            whiteButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    drawingView.setPaintColor(Color.WHITE);
-                }
-            });
-
-            blackButton = (ImageButton) rootView.findViewById(R.id.color_black_btn);
-            blackButton.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    drawingView.setPaintColor(Color.BLACK);
-                }
-            });
-
-
             locationText = (TextView) rootView.findViewById(R.id.location_txt);
 
             locationHelper = new LocationHelper(getActivity());
+            locationHelper.setAccuracy(100f);
             long timeoutMs = 3 * 60 * 1000;
             locationHelper.fetchLocation(timeoutMs, LocationHelper.Accuracy.FINE, new LocationHelper.LocationResponse() {
                 @Override
-                public void onLocationAquired(Location l) {
+                public void onLocationAcquired(Location l) {
                     l.getAccuracy();
                     location = l;
                     updateLocation(l);
