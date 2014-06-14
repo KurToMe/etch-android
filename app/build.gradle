@@ -16,11 +16,21 @@ android {
     compileSdkVersion 19
     buildToolsVersion "19.0.3"
 
+
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 19
         versionCode 1
         versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("ETCH_KEYSTORE_PATH"))
+            storePassword System.getenv("ETCH_KEYSTORE_PW")
+            keyAlias System.getenv("ETCH_RELEASE_KEY")
+            keyPassword System.getenv("ETCH_RELEASE_KEY_PW")
+        }
     }
 
     compileOptions {
@@ -31,6 +41,7 @@ android {
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            signingConfig signingConfigs.release
         }
     }
 
@@ -44,6 +55,8 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     compile 'com.octo.android.robospice:robospice-google-http-client:1.4.12'
+    compile 'com.squareup.dagger:dagger:1.2.1'
+    compile 'com.squareup.dagger:dagger-compiler:1.2.1'
     compile 'com.google.http-client:google-http-client-jackson:1.18.0-rc'
     compile 'com.noveogroup.android:android-logger:1.3.1'
 
