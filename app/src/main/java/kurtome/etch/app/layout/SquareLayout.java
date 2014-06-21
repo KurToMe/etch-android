@@ -22,31 +22,10 @@ public class SquareLayout extends LinearLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
-        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
-        int size = computeSize(widthMode, widthSize, heightMode, heightSize);
-
-        int finalMeasureSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
+        int finalMeasureSpec = MeasureSpec.makeMeasureSpec(Math.min(widthSize, heightSize), MeasureSpec.EXACTLY);
         super.onMeasure(finalMeasureSpec, finalMeasureSpec);
-    }
-
-    private int computeSize(int widthMode, int widthSize, int heightMode, int heightSize) {
-        if (widthMode == MeasureSpec.EXACTLY && widthSize > 0) {
-            return widthSize;
-        }
-        else if (heightMode == MeasureSpec.EXACTLY && heightSize > 0) {
-            return heightSize;
-        }
-        else {
-            if (widthSize < heightSize) {
-                return widthSize;
-            }
-            else {
-                return heightSize;
-            }
-        }
     }
 }

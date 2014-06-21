@@ -36,7 +36,6 @@ public class DrawingView extends View {
         drawCanvas = new Canvas(canvasBitmap);
     }
 
-
     //draw view
     @Override
     protected void onDraw(Canvas canvas) {
@@ -58,7 +57,7 @@ public class DrawingView extends View {
                 break;
             case MotionEvent.ACTION_MOVE:
                 drawPath.lineTo(touchX, touchY);
-                break;
+               break;
             case MotionEvent.ACTION_UP:
                 drawPath.lineTo(touchX, touchY);
                 drawCanvas.drawPath(drawPath, currentBrush.getPaint());
@@ -71,26 +70,27 @@ public class DrawingView extends View {
         return true;
     }
 
-    public void setPaintColor(int color) {
-        currentBrush.setColor(color);
-    }
-
-
     public DrawingBrush getDrawingBrush()  {
         return currentBrush;
     }
 
+
     public void setCurrentImage(String base64Image) {
+        clearCanvas();
         if (StringUtils.isNotBlank(base64Image)) {
             drawEtchToCanvas(base64Image);
         }
+        invalidate();
     }
 
     private void drawEtchToCanvas(String base64Image) {
         byte[] bytes = Base64.decodeBase64(base64Image);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         drawCanvas.drawBitmap(bitmap, 0, 0, basicPaint);
-        invalidate();
+    }
+
+    private void clearCanvas() {
+        drawCanvas.drawColor(Color.WHITE);
     }
 
     public String getCurrentImage() {

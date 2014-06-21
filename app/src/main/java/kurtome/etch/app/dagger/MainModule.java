@@ -5,29 +5,31 @@ import com.octo.android.robospice.SpiceManager;
 import dagger.Module;
 import dagger.Provides;
 import kurtome.etch.app.activity.MainActivity;
+import kurtome.etch.app.drawing.DrawingFragment;
 
 import javax.inject.Singleton;
 
 @Module(
         injects = {
                 MainActivity.class,
-                MainActivity.PlaceholderFragment.class
+                DrawingFragment.class
         }
 )
 public class MainModule {
 
-    private MainActivity mainActivity;
+//    private MainActivity mainActivity;
+//
+//    public MainModule(MainActivity mainActivity) {
+//        this.mainActivity = mainActivity;
+//    }
+//
+//    @Provides
+//    public MainActivity provideMainActivity() {
+//        return mainActivity;
+//    }
 
-    public MainModule(MainActivity mainActivity) {
-        this.mainActivity = mainActivity;
-    }
 
-    @Provides @Singleton
-    public MainActivity provideMainActivity() {
-        return mainActivity;
-    }
-
-    @Provides @Singleton
+    @Provides
     public SpiceManager provideSpiceManager() {
         return new SpiceManager(JacksonGoogleHttpClientSpiceService.class);
     }
