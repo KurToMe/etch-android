@@ -13,7 +13,7 @@
             android:textIsSelectable="true"
             />
 
-    <kurtome.etch.app.layout.SquareLayout
+    <kurtome.etch.app.layout.ConstrainedCanvasLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
                   xmlns:tools="http://schemas.android.com/tools"
                   android:layout_width="fill_parent"
@@ -33,7 +33,7 @@
                 android:layout_weight="1"
                 android:background="#FFFFFFFF"/>
 
-                  </kurtome.etch.app.layout.SquareLayout>
+                  </kurtome.etch.app.layout.ConstrainedCanvasLayout>
 
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
