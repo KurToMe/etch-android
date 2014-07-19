@@ -2,7 +2,7 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#FFCCCCCC"
+              android:background="#0FCCCCCC"
               android:orientation="vertical"
               tools:context=".MainActivity">
 
@@ -31,6 +31,7 @@
                 android:layout_marginRight="5dp"
                 android:layout_marginTop="3dp"
                 android:layout_weight="1"
+                android:alpha="1"
                 android:background="#FFFFFFFF"/>
 
                   </kurtome.etch.app.layout.ConstrainedCanvasLayout>
@@ -40,7 +41,7 @@
                   xmlns:tools="http://schemas.android.com/tools"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:background="#FFCCCCCC"
+                  android:background="#0FCCCCCC"
                   android:orientation="horizontal"
                   tools:context=".MainActivity">
 
@@ -49,7 +50,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:contentDescription="opacity"
+                android:background="#FFCCCCCC"
+                android:alpha="1"
+                android:contentDescription="color chooser"
                 android:src="@drawable/opacity"/>
 
 
@@ -57,7 +60,9 @@
                 android:id="@+id/save_etch_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="#FFDDDDDD"
                 android:layout_gravity="center"
+                android:alpha="1"
                 android:contentDescription="save"
                 android:src="@android:drawable/ic_menu_save"/>
     </LinearLayout>
