@@ -91,10 +91,16 @@ public class MapFragment extends Fragment {
 
         mPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-        this.mCompassOverlay = new CompassOverlay(context, new InternalCompassOrientationProvider(context),
-                mMapView);
-        this.mLocationOverlay = new MyLocationNewOverlay(context, new GpsMyLocationProvider(context),
-                mMapView);
+        this.mCompassOverlay = new CompassOverlay(
+                context,
+                new InternalCompassOrientationProvider(context),
+                mMapView
+        );
+        this.mLocationOverlay = new MyLocationNewOverlay(
+                context,
+                new GpsMyLocationProvider(context),
+                mMapView
+        );
 
         mMinimapOverlay = new MinimapOverlay(context, mMapView.getTileRequestCompleteHandler());
         mMinimapOverlay.setWidth(dm.widthPixels / 5);
