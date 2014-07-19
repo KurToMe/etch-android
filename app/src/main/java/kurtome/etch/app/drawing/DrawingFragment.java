@@ -148,16 +148,16 @@ public class DrawingFragment extends Fragment {
 
 
     @Subscribe
-    public void updateLocation(final Location location) {
-        mLocation = location;
+    public void updateLocation(final LocationUpdatedEvent event) {
+        mLocation = event.getLocation();
 
-        String text = location.getLatitude() + " " + location.getLongitude() + ", accuracy: " + location.getAccuracy() + "m";
+        String text = mLocation.getLatitude() + " " + mLocation.getLongitude() + ", accuracy: " + mLocation.getAccuracy() + "m";
         mLocationText.setText(text);
-        spiceManager.execute(new GetEtchRequest(location), new RequestListener<Etch>() {
+        spiceManager.execute(new GetEtchRequest(mLocation), new RequestListener<Etch>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
-                logger.e(e, "Error getting etch for location {}.", location);
+                logger.e(e, "Error getting etch for location {}.", mLocation);
             }
 
             @Override

@@ -4,15 +4,20 @@ import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.*;
 import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
+import kurtome.etch.app.location.LocationUpdatedEvent;
+import org.metalev.multitouch.controller.MultiTouchController;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.util.ResourceProxyImpl;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MinimapOverlay;
@@ -43,14 +48,15 @@ public class MapFragment extends Fragment {
 
     private SharedPreferences mPrefs;
     private MapView mMapView;
-    private MyLocationNewOverlay mLocationOverlay;
+//    private MyLocationNewOverlay mLocationOverlay;
     private CompassOverlay mCompassOverlay;
     private MinimapOverlay mMinimapOverlay;
     private ScaleBarOverlay mScaleBarOverlay;
     //    private RotationGestureOverlay mRotationGestureOverlay;
     private ResourceProxy mResourceProxy;
+    private Location mLocation;
 
-    @Inject Bus eventBus;
+    @Inject Bus mEventBus;
 
     public static MapFragment newInstance() {
         MapFragment fragment = new MapFragment();
@@ -65,6 +71,7 @@ public class MapFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         ObjectGraphUtils.inject(this);
+        mEventBus.register(this);
 
         mResourceProxy = new ResourceProxyImpl(inflater.getContext().getApplicationContext());
         mMapView = new MapView(inflater.getContext(), 256, mResourceProxy);
@@ -96,11 +103,11 @@ public class MapFragment extends Fragment {
                 new InternalCompassOrientationProvider(context),
                 mMapView
         );
-        this.mLocationOverlay = new MyLocationNewOverlay(
-                context,
-                new GpsMyLocationProvider(context),
-                mMapView
-        );
+//        this.mLocationOverlay = new MyLocationNewOverlay(
+//                context,
+//                new GpsMyLocationProvider(context),
+//                mMapView
+//        );
 
         mMinimapOverlay = new MinimapOverlay(context, mMapView.getTileRequestCompleteHandler());
         mMinimapOverlay.setWidth(dm.widthPixels / 5);
@@ -115,7 +122,7 @@ public class MapFragment extends Fragment {
 
         mMapView.setBuiltInZoomControls(true);
         mMapView.setMultiTouchControls(true);
-        mMapView.getOverlays().add(this.mLocationOverlay);
+//        mMapView.getOverlays().add(this.mLocationOverlay);
         mMapView.getOverlays().add(this.mCompassOverlay);
         mMapView.getOverlays().add(this.mMinimapOverlay);
         mMapView.getOverlays().add(this.mScaleBarOverlay);
@@ -124,7 +131,7 @@ public class MapFragment extends Fragment {
         mMapView.getController().setZoom(mPrefs.getInt(PREFS_ZOOM_LEVEL, 1));
         mMapView.scrollTo(mPrefs.getInt(PREFS_SCROLL_X, 0), mPrefs.getInt(PREFS_SCROLL_Y, 0));
 
-        mLocationOverlay.enableMyLocation();
+//        mLocationOverlay.enableMyLocation();
         mCompassOverlay.enableCompass();
 
         setHasOptionsMenu(true);
@@ -137,11 +144,11 @@ public class MapFragment extends Fragment {
         edit.putInt(PREFS_SCROLL_X, mMapView.getScrollX());
         edit.putInt(PREFS_SCROLL_Y, mMapView.getScrollY());
         edit.putInt(PREFS_ZOOM_LEVEL, mMapView.getZoomLevel());
-        edit.putBoolean(PREFS_SHOW_LOCATION, mLocationOverlay.isMyLocationEnabled());
+//        edit.putBoolean(PREFS_SHOW_LOCATION, mLocationOverlay.isMyLocationEnabled());
         edit.putBoolean(PREFS_SHOW_COMPASS, mCompassOverlay.isCompassEnabled());
         edit.commit();
 
-        this.mLocationOverlay.disableMyLocation();
+//        this.mLocationOverlay.disableMyLocation();
         this.mCompassOverlay.disableCompass();
 
         super.onPause();
@@ -160,7 +167,7 @@ public class MapFragment extends Fragment {
             mMapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE);
         }
         if (mPrefs.getBoolean(PREFS_SHOW_LOCATION, false)) {
-            this.mLocationOverlay.enableMyLocation();
+//            this.mLocationOverlay.enableMyLocation();
         }
         if (mPrefs.getBoolean(PREFS_SHOW_COMPASS, false)) {
             this.mCompassOverlay.enableCompass();
@@ -220,9 +227,24 @@ public class MapFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    public MapView getMapView() {
-        return mMapView;
+    @Subscribe
+    public void updateLocation(final LocationUpdatedEvent event) {
+        mLocation = event.getLocation();
+
+        setMaxZoom();
+        centerOnLocation();
     }
+
+    private void centerOnLocation() {
+        mMapView.getController().setCenter(new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude()));
+    }
+
+    private void setMaxZoom() {
+        // http://wiki.openstreetmap.org/wiki/Zoom_levels
+        int zoomLevel = 19;
+        mMapView.getController().setZoom(zoomLevel);
+    }
+
 
     // @Override
     // public boolean onTrackballEvent(final MotionEvent event) {
