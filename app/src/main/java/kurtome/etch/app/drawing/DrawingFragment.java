@@ -14,6 +14,7 @@ import com.noveogroup.android.log.LoggerManager;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
+import com.squareup.otto.Bus;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
@@ -43,21 +44,14 @@ public class DrawingFragment extends Fragment {
     private boolean postInject = false;
 
     @Inject public SpiceManager spiceManager;
+    @Inject public Bus eventBus;
 
     @Override
     public void onStart() {
         super.onStart();
         spiceManager.start(getActivity());
 
-        long timeoutMs = 3 * 60 * 1000;
-        locationHelper.fetchLocation(timeoutMs, LocationHelper.Accuracy.FINE, new LocationHelper.LocationResponse() {
-            @Override
-            public void onLocationAcquired(Location l) {
-                l.getAccuracy();
-                location = l;
-                updateLocation(l);
-            }
-        });
+        refreshLocation();
     }
 
     @Override
@@ -96,12 +90,30 @@ public class DrawingFragment extends Fragment {
         });
 
         locationText = (TextView) rootView.findViewById(R.id.location_txt);
+        locationText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refreshLocation();
+            }
+        });
 
         locationHelper = new LocationHelper(getActivity());
         locationHelper.setAccuracy(100f);
 
         logger.d("onCreateView {}", (spiceManager != null));
         return rootView;
+    }
+
+    private void refreshLocation() {
+        long timeoutMs = 3 * 60 * 1000;
+        locationHelper.fetchLocation(timeoutMs, LocationHelper.Accuracy.FINE, new LocationHelper.LocationResponse() {
+            @Override
+            public void onLocationAcquired(Location l) {
+                l.getAccuracy();
+                location = l;
+                updateLocation(l);
+            }
+        });
     }
 
     private void showColorDialog() {
@@ -149,7 +161,7 @@ public class DrawingFragment extends Fragment {
     }
 
     private void updateLocation(final Location location) {
-        String text = location.getLatitude() + " " + location.getLongitude() + ", accuracy: " + location.getAccuracy();
+        String text = location.getLatitude() + " " + location.getLongitude() + ", accuracy: " + location.getAccuracy() + "m";
         locationText.setText(text);
         spiceManager.execute(new GetEtchRequest(location), new RequestListener<Etch>() {
 

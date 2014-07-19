@@ -2,17 +2,11 @@ package kurtome.etch.app.activity;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
-import com.octo.android.robospice.SpiceManager;
-import dagger.ObjectGraph;
 import kurtome.etch.app.R;
-import kurtome.etch.app.dagger.MainModule;
 import kurtome.etch.app.drawing.DrawingFragment;
-
-import javax.inject.Inject;
+import kurtome.etch.app.openstreetmap.MapFragment;
 
 
 public class MainActivity extends Activity {
@@ -27,7 +21,12 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
+                    .add(R.id.container, new MapFragment())
+                    .commit();
+            getFragmentManager().beginTransaction()
+                    .setCustomAnimations(R.animator.enter_slide_up, R.animator.exit_slide_down, R.animator.enter_slide_up, R.animator.exit_slide_down)
                     .add(R.id.container, new DrawingFragment())
+                    .addToBackStack(null)
                     .commit();
         }
 
