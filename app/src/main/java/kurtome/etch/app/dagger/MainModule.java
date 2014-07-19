@@ -7,6 +7,7 @@ import dagger.Module;
 import dagger.Provides;
 import kurtome.etch.app.activity.MainActivity;
 import kurtome.etch.app.drawing.DrawingFragment;
+import kurtome.etch.app.location.LocationProducer;
 import kurtome.etch.app.openstreetmap.MapFragment;
 
 import javax.inject.Singleton;
@@ -15,7 +16,8 @@ import javax.inject.Singleton;
         injects = {
                 MainActivity.class,
                 DrawingFragment.class,
-                MapFragment.class
+                MapFragment.class,
+                LocationProducer.class
         }
 )
 public class MainModule {
@@ -37,7 +39,7 @@ public class MainModule {
         return new SpiceManager(JacksonGoogleHttpClientSpiceService.class);
     }
 
-    @Provides
+    @Provides @Singleton
     public Bus provideEventBus() {
         // maybe should make one specific to posting location updates?
         return new Bus("main-etch-bus");

@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.os.Bundle;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
+import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.drawing.DrawingFragment;
+import kurtome.etch.app.location.LocationProducer;
 import kurtome.etch.app.openstreetmap.MapFragment;
 
 
@@ -13,8 +15,12 @@ public class MainActivity extends Activity {
 
     private static final Logger logger = LoggerManager.getLogger();
 
+    private LocationProducer mLocationProducer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        mLocationProducer = new LocationProducer(this);
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
@@ -30,6 +36,7 @@ public class MainActivity extends Activity {
                     .commit();
         }
 
+        mLocationProducer.refreshLocation();
     }
 
 
