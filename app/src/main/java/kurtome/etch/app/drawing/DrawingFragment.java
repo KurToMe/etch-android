@@ -24,6 +24,7 @@ import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
 import kurtome.etch.app.location.LocationHelper;
 import kurtome.etch.app.location.LocationUpdatedEvent;
+import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
 
@@ -39,7 +40,7 @@ public class DrawingFragment extends Fragment {
     private ImageButton mSaveEtchButton;
     private View mRootView;
     private TextView mLocationText;
-    private Location mLocation;
+    private Coordinates mCoordinates;
 
     @Inject public SpiceManager spiceManager;
     @Inject public Bus mEventBus;
@@ -64,7 +65,6 @@ public class DrawingFragment extends Fragment {
             Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         ObjectGraphUtils.inject(this);
-        mEventBus.register(this);
 
 
         mRootView = inflater.inflate(R.layout.fragment_main, container, false);
@@ -98,6 +98,10 @@ public class DrawingFragment extends Fragment {
 
 
         logger.d("onCreateView {}", (spiceManager != null));
+
+        // Do this last so everything is setup before handling events
+        mEventBus.register(this);
+
         return mRootView;
     }
 
@@ -118,7 +122,7 @@ public class DrawingFragment extends Fragment {
     }
 
     private void saveEtch() {
-        if (mLocation == null) {
+        if (mCoordinates == null) {
             logger.d("Unknown location, can't set etch.");
             return;
         }
@@ -128,15 +132,15 @@ public class DrawingFragment extends Fragment {
         final SaveEtchCommand saveEtchCommand = new SaveEtchCommand();
         saveEtchCommand.setBase64Image(image);
         Coordinates coordinates = new Coordinates();
-        coordinates.setLatitude(mLocation.getLatitude());
-        coordinates.setLongitude(mLocation.getLongitude());
+        coordinates.setLatitude(mCoordinates.getLatitude());
+        coordinates.setLongitude(mCoordinates.getLongitude());
         saveEtchCommand.setCoordinates(coordinates);
 
         spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
-                logger.e(e, "Error getting etch for location {}.", mLocation);
+                logger.e(e, "Error getting etch for location {}.", mCoordinates);
             }
 
             @Override
@@ -149,15 +153,21 @@ public class DrawingFragment extends Fragment {
 
     @Subscribe
     public void updateLocation(final LocationUpdatedEvent event) {
-        mLocation = event.getLocation();
+//        mLocation = event.getLocation();
+//
+//        String text = mLocation.getLatitude() + " " + mLocation.getLongitude() + ", accuracy: " + mLocation.getAccuracy() + "m";
+//        mLocationText.setText(text);
+    }
 
-        String text = mLocation.getLatitude() + " " + mLocation.getLongitude() + ", accuracy: " + mLocation.getAccuracy() + "m";
-        mLocationText.setText(text);
-        spiceManager.execute(new GetEtchRequest(mLocation), new RequestListener<Etch>() {
+    @Subscribe
+    public void mapLocationSelected(MapLocationSelectedEvent event) {
+        mCoordinates = event.getCoordinates();
+
+        spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
-                logger.e(e, "Error getting etch for location {}.", mLocation);
+                logger.e(e, "Error getting etch for location {}.", mCoordinates);
             }
 
             @Override
@@ -166,5 +176,4 @@ public class DrawingFragment extends Fragment {
             }
         });
     }
-
 }

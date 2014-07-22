@@ -1,14 +1,21 @@
 package kurtome.etch.app.activity;
 
 import android.app.Activity;
+import android.location.Location;
 import android.os.Bundle;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
+import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.drawing.DrawingFragment;
 import kurtome.etch.app.location.LocationProducer;
+import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.openstreetmap.MapFragment;
+import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
+
+import javax.inject.Inject;
 
 
 public class MainActivity extends Activity {
@@ -16,9 +23,17 @@ public class MainActivity extends Activity {
     private static final Logger logger = LoggerManager.getLogger();
 
     private LocationProducer mLocationProducer;
+    private Location mLocation;
+
+    @Inject Bus mEventBus;
+
+    private static final String DRAWING_ADDED_BACKSTACK = "drawing-added";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ObjectGraphUtils.inject(this);
+        mEventBus.register(this);
+
         mLocationProducer = new LocationProducer(this);
 
         super.onCreate(savedInstanceState);
@@ -29,14 +44,33 @@ public class MainActivity extends Activity {
             getFragmentManager().beginTransaction()
                     .add(R.id.container, new MapFragment())
                     .commit();
-            getFragmentManager().beginTransaction()
-                    .setCustomAnimations(R.animator.enter_slide_up, R.animator.exit_slide_down, R.animator.enter_slide_up, R.animator.exit_slide_down)
-                    .add(R.id.container, new DrawingFragment())
-                    .addToBackStack(null)
-                    .commit();
+            goToDrawingFragment();
         }
 
         mLocationProducer.refreshLocation();
+    }
+
+    private void goToDrawingFragment() {
+        getFragmentManager().beginTransaction()
+                .setCustomAnimations(R.animator.enter_slide_up, R.animator.exit_slide_down, R.animator.enter_slide_up, R.animator.exit_slide_down)
+                .add(R.id.container, new DrawingFragment())
+                .addToBackStack(DRAWING_ADDED_BACKSTACK)
+                .commit();
+    }
+
+    @Subscribe
+    public void deviceLocationChanged(LocationUpdatedEvent event) {
+        if (mLocation == null) {
+            // first location acquired to go map
+            getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, 0);
+        }
+        mLocation = event.getLocation();
+
+    }
+
+    @Subscribe
+    public void mapLocationSelected(MapLocationSelectedEvent event) {
+        goToDrawingFragment();
     }
 
 
