@@ -23,7 +23,7 @@ public class SaveEtchRequest extends GoogleHttpClientSpiceRequest<Void> {
     public Void loadDataFromNetwork() throws Exception {
         GenericUrl genericUrl = new GenericUrl(GetEtchRequest.getUrl(command.getCoordinates()));
 
-        logger.i(
+        logger.info(
                 "Saving etch to {},{} with content of length {}",
                 command.getCoordinates().getLatitudeE6(),
                 command.getCoordinates().getLongitudeE6(),
