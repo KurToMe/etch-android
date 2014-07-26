@@ -105,6 +105,11 @@ public class DrawingFragment extends Fragment {
         return mRootView;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mEventBus.unregister(this);
+    }
 
     private void showColorDialog() {
         ColorPickerDialog dialog = new ColorPickerDialog(getActivity(), mDrawingBrush.getColor(), new ColorPickerView.OnColorChangedListener() {

@@ -20,7 +20,7 @@ public class CoordinateUtils {
      */
     public static double truncate(double d) {
         double multiplier = Math.pow(10, DECIMAL_DIGITS);
-        return Math.floor(d * multiplier) / multiplier;
+        return Math.round(d * multiplier) / multiplier;
     }
 
     public static Coordinates incrementWest(Coordinates coordinates) {
@@ -91,9 +91,11 @@ public class CoordinateUtils {
     }
 
     public static GeoPoint offset(GeoPoint point, int latOffset, int longOffset) {
+        int latSign = point.getLatitude() > 0 ? 1 : -1;
+        int longSign = point.getLongitude() > 0 ? 1 : -1;
         return new GeoPoint(
-                point.getLatitude() + (MIN_INCREMENT * latOffset),
-                point.getLongitude() + (MIN_INCREMENT * longOffset)
+                point.getLatitude() + (MIN_INCREMENT * latOffset * latSign),
+                point.getLongitude() + (MIN_INCREMENT * longOffset * longSign)
         );
     }
 

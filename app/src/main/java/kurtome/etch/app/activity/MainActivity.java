@@ -52,6 +52,15 @@ public class MainActivity extends Activity {
         mLocationProducer.refreshLocation();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Unregister everything so there are no memory leaks
+        //  and to ensure only one of everything is registered
+        mEventBus.unregister(this);
+        mLocationProducer.onDestroy();
+    }
+
     private boolean isFragmentVisible(String tag) {
         Fragment fragment = getFragmentManager().findFragmentByTag(tag);
         if (fragment != null) {

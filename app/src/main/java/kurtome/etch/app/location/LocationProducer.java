@@ -42,4 +42,8 @@ public class LocationProducer {
     public LocationUpdatedEvent produce() {
         return mLastEvent;
     }
+
+    public void onDestroy() {
+        mEventBus.unregister(this);
+    }
 }
