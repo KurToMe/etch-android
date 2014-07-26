@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.DrawableContainer;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
 import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
+import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
@@ -29,6 +31,7 @@ import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import org.osmdroid.ResourceProxy;
+import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.XYTileSource;
@@ -39,7 +42,7 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.OverlayItem;
-import org.osmdroid.views.overlay.ScaleBarOverlay;
+//import org.osmdroid.views.overlay.ScaleBarOverlay;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -58,12 +61,8 @@ public class MapFragment extends Fragment {
         }
 
         private void goToSelectedEtch(EtchOverlayItem etchItem) {
-            GeoPoint point = etchItem.getPoint();
             mLastSelectedEvent = new MapLocationSelectedEvent();
-            Coordinates coordinates = new Coordinates();
-            coordinates.setLatitude(point.getLatitude());
-            coordinates.setLongitude(point.getLongitude());
-            mLastSelectedEvent.setCoordinates(coordinates);
+            mLastSelectedEvent.setCoordinates(etchItem.getEtchCoordinates());
             mEventBus.post(mLastSelectedEvent);
         }
 
@@ -73,6 +72,7 @@ public class MapFragment extends Fragment {
         }
     };
     private ItemizedIconOverlay<OverlayItem> mCenterOverlay;
+    private ItemizedIconOverlay<OverlayItem> mEtchGridOverlay;
 
     /**
      * http://www.maps.stamen.com
@@ -103,11 +103,10 @@ public class MapFragment extends Fragment {
     //    private MyLocationNewOverlay mLocationOverlay;
 //    private CompassOverlay mCompassOverlay;
 //    private MinimapOverlay mMinimapOverlay;
-    private ScaleBarOverlay mScaleBarOverlay;
+//    private ScaleBarOverlay mScaleBarOverlay;
     //    private RotationGestureOverlay mRotationGestureOverlay;
     private ResourceProxy mResourceProxy;
     private Location mLocation;
-    private OverlayItem mCenterOverlayItem;
     private MapLocationSelectedEvent mLastSelectedEvent;
 
     @Inject Bus mEventBus;
@@ -168,6 +167,8 @@ public class MapFragment extends Fragment {
             mMapView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
     }
 
+
+
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -194,9 +195,9 @@ public class MapFragment extends Fragment {
 //        mMinimapOverlay.setHeight(dm.heightPixels / 5);
 //        mMinimapOverlay.setZoomDifference(5);
 
-        mScaleBarOverlay = new ScaleBarOverlay(context);
-        mScaleBarOverlay.setCentred(true);
-        mScaleBarOverlay.setScaleBarOffset(dm.widthPixels / 2, 10);
+//        mScaleBarOverlay = new ScaleBarOverlay(context);
+//        mScaleBarOverlay.setCentred(true);
+//        mScaleBarOverlay.setScaleBarOffset(dm.widthPixels / 2, 10);
 
 //        mRotationGestureOverlay = new RotationGestureOverlay(context, mMapView);
 //		mRotationGestureOverlay.setEnabled(false);
@@ -206,7 +207,7 @@ public class MapFragment extends Fragment {
 //        mMapView.getOverlays().add(this.mLocationOverlay);
 //        mMapView.getOverlays().add(this.mCompassOverlay);
 //        mMapView.getOverlays().add(this.mMinimapOverlay);
-        mMapView.getOverlays().add(this.mScaleBarOverlay);
+//        mMapView.getOverlays().add(this.mScaleBarOverlay);
 //        mMapView.getOverlays().add(this.mRotationGestureOverlay);
 
         mMapView.scrollTo(mPrefs.getInt(PREFS_SCROLL_X, 0), mPrefs.getInt(PREFS_SCROLL_Y, 0));
@@ -219,6 +220,13 @@ public class MapFragment extends Fragment {
         setHasOptionsMenu(false);
 
 //        mMapView.onTouchEvent()
+
+        mMapView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                attemptAddOverlaysToMapBasedOnLocation();
+            }
+        });
     }
 
     @Override
@@ -321,6 +329,12 @@ public class MapFragment extends Fragment {
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mEventBus.unregister(this);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (mMapView.getOverlayManager().onOptionsItemSelected(item, MENU_LAST_ID, mMapView))
             return true;
@@ -337,16 +351,48 @@ public class MapFragment extends Fragment {
     public void updateLocation(final LocationUpdatedEvent event) {
         mLocation = event.getLocation();
 
-        centerOnLocation();
-        placeEtchOverlays();
+        attemptAddOverlaysToMapBasedOnLocation();
     }
 
     private static class EtchOverlayItem extends OverlayItem {
+        private Coordinates mEtchCoordinates;
 
         public EtchOverlayItem(String aTitle, String aSnippet, GeoPoint aGeoPoint) {
             super(aTitle, aSnippet, aGeoPoint);
         }
 
+        public Coordinates getEtchCoordinates() {
+            return mEtchCoordinates;
+        }
+
+        public void setEtchCoordinates(Coordinates etchCoordinates) {
+            mEtchCoordinates = etchCoordinates;
+        }
+    }
+
+    /**
+     * Might only work with odd numbers right now, due to how we calculate offsets etc.
+     */
+    private static final int ETCH_GRID_SIZE = 3;
+
+    private void attemptAddOverlaysToMapBasedOnLocation() {
+        if (mEtchGridOverlay != null) {
+            // already added
+            return;
+        }
+
+        if (mLocation == null) {
+            // don't know where we are
+            return;
+        }
+
+        if (mMapView.getWidth() <= 0) {
+            // map isn't ready
+            return;
+        }
+
+        centerOnLocation();
+        placeEtchOverlays();
     }
 
     private void placeEtchOverlays() {
@@ -358,41 +404,72 @@ public class MapFragment extends Fragment {
         GeoPoint exactCenter = new GeoPoint(latitude, longitude);
         GeoPoint point = CoordinateUtils.truncate(exactCenter);
 
-        for (int latOffset = -4; latOffset <= 4; latOffset++) {
-            for (int longOffset = -4; longOffset <= 4; longOffset++) {
-                EtchOverlayItem etchItem = getEtchOverlayItem(CoordinateUtils.offset(point, latOffset, longOffset));
+        int initialOffset = (-ETCH_GRID_SIZE / 2);
+        int maxOffset = -initialOffset;
+        for (int longOffset = initialOffset; longOffset <= maxOffset; longOffset++) {
+            for (int latOffset = initialOffset; latOffset <= maxOffset; latOffset++) {
+                GeoPoint offset = CoordinateUtils.offset(point, latOffset, longOffset);
+
+                // Upper left (offset -1, -1) should be 0, 0 on the grid of etches
+                int etchGridX = longOffset + -initialOffset;
+                int etchGridY = latOffset + -initialOffset;
+
+                EtchOverlayItem etchItem = getEtchOverlayItem(offset, etchGridX, etchGridY);
+                etchItem.setEtchCoordinates(CoordinateUtils.convert(offset));
                 items.add(etchItem);
             }
         }
-        mMapView.getOverlays().add(new ItemizedIconOverlay<OverlayItem>(this.getActivity(), items, ON_ITEM_GESTURE_LISTENER));
+        mEtchGridOverlay = new ItemizedIconOverlay<OverlayItem>(this.getActivity(), items, ON_ITEM_GESTURE_LISTENER);
+        mMapView.getOverlays().add(mEtchGridOverlay);
 
     }
 
-    private EtchOverlayItem getEtchOverlayItem(GeoPoint point) {
-        EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", point);
+    private Point etchGridUpperLeft() {
+        final int etchSize = mMapView.getWidth() / ETCH_GRID_SIZE;
+        final int etchGridHeight = etchSize * ETCH_GRID_SIZE;
+        final int extraYPixels = mMapView.getHeight() - etchGridHeight;
+        return new Point(0, extraYPixels / 2);
+    }
+
+    private GeoPoint pixelPointOnMap(Point point) {
+        Projection projection = mMapView.getProjection();
+        IGeoPoint iGeo = projection.fromPixels(point.x, point.y);
+        if (iGeo instanceof GeoPoint) {
+            return (GeoPoint) iGeo;
+        }
+        else {
+            return new GeoPoint(iGeo.getLatitudeE6(), iGeo.getLongitudeE6());
+        }
+    }
+
+    private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint, int etchGridX, int etchGridY) {
+
+
+        final int etchSize = mMapView.getWidth() / ETCH_GRID_SIZE;
+
+        Point etchGridOrigin = etchGridUpperLeft();
+        Point upperLeft = new Point(etchGridOrigin.x + (etchSize * etchGridX), etchGridOrigin.y + (etchSize * etchGridY));
+
+        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
+        EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", upperLeftGeo);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.UPPER_LEFT_CORNER);
 
-        Projection projection = mMapView.getProjection();
-        Point upperLeft = projection.toPixels(point, null);
-        Point upperRight = projection.toPixels(CoordinateUtils.incrementEast(point), null);
-        GeoPoint lowerLeftGeo = CoordinateUtils.incrementSouth(point);
-        Point lowerLeft = projection.toPixels(lowerLeftGeo, null);
-        Point lowerRight = projection.toPixels(CoordinateUtils.incrementEast(lowerLeftGeo), null);
+//        Point upperRight = new Point(upperLeft.x + size, upperLeft.y);
+//        Point lowerLeft = new Point(upperLeft.x, upperLeft.y + size);
+//        Point lowerRight = new Point(upperLeft.x + size, upperLeft.y + size);
 
-        final int size = Math.abs(upperLeft.x - upperRight.x);
-
-        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
         final Canvas canvas = new Canvas(bitmap);
         Paint paint = new Paint();
-        paint.setStrokeWidth(1);
+        paint.setStrokeWidth(2);
         paint.setColor(Color.GRAY);
-        canvas.drawLine(1, 1, 1, size - 1, paint); // to lower left
-        canvas.drawLine(1, size - 1, size - 1, size - 1, paint); // to lower right
-        canvas.drawLine(size - 1, size - 1, size - 1, 1, paint); // to upper right
-        canvas.drawLine(size - 1, 1, 1, 1, paint); // to upper left
+        canvas.drawLine(1, 1, 1, etchSize - 1, paint); // to lower left
+        canvas.drawLine(1, etchSize - 1, etchSize - 1, etchSize - 1, paint); // to lower right
+        canvas.drawLine(etchSize - 1, etchSize - 1, etchSize - 1, 1, paint); // to upper right
+        canvas.drawLine(etchSize - 1, 1, 1, 1, paint); // to upper left
         etchItem.setMarker(new BitmapDrawable(getResources(), bitmap));
 
-        final Coordinates coordinates = CoordinateUtils.convert(point);
+        final Coordinates coordinates = CoordinateUtils.convert(etchPoint);
         spiceManager.execute(new GetEtchRequest(coordinates), new RequestListener<Etch>() {
 
             @Override
@@ -405,7 +482,7 @@ public class MapFragment extends Fragment {
                 if (etch.getBase64Image() != null) {
                     byte[] bytes = Base64.decodeBase64(etch.getBase64Image());
                     Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    canvas.drawBitmap(Bitmap.createScaledBitmap(bitmap, size, size, false), 0, 0, DrawingBrush.BASIC_PAINT);
+                    canvas.drawBitmap(Bitmap.createScaledBitmap(bitmap, etchSize, etchSize, false), 0, 0, DrawingBrush.BASIC_PAINT);
                     mMapView.invalidate();
                 }
             }
@@ -417,21 +494,27 @@ public class MapFragment extends Fragment {
     private void centerOnLocation() {
         double latitude = mLocation.getLatitude();
         double longitude = mLocation.getLongitude();
-        GeoPoint point = new GeoPoint(latitude, longitude);
-        mMapController.setCenter(point);
+        GeoPoint userCenterPoint = new GeoPoint(latitude, longitude);
+        mMapController.setCenter(userCenterPoint);
 
         BoundingBoxE6 boundingBox = new BoundingBoxE6(latitude, longitude, latitude, longitude);
 
         mMapView.setScrollableAreaLimit(boundingBox);
 
-//        addCenterOverlay(point);
+        addCenterOverlay(userCenterPoint);
     }
 
-    private void addCenterOverlay(GeoPoint point) {
+    private void addCenterOverlay(GeoPoint userCenterPoint) {
         List<OverlayItem> items = Lists.newArrayList();
-        mCenterOverlayItem = new OverlayItem("Center", "Center", point);
-        items.add(mCenterOverlayItem);
+        OverlayItem centerItem = new OverlayItem("Center", "Center", userCenterPoint);
+        int size = 40;
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        centerItem.setMarker(getResources().getDrawable(R.drawable.marker));
+
+        items.add(centerItem);
+
         mCenterOverlay = new ItemizedIconOverlay<OverlayItem>(this.getActivity(), items, ON_ITEM_GESTURE_LISTENER);
+
         mMapView.getOverlays().add(mCenterOverlay);
     }
 
