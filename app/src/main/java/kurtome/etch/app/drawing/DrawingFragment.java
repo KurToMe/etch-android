@@ -9,8 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import com.noveogroup.android.log.Logger;
-import com.noveogroup.android.log.LoggerManager;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
@@ -29,13 +27,15 @@ import kurtome.etch.app.openstreetmap.MapFragment;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.zip.GZIPInputStream;
 
 public class DrawingFragment extends Fragment {
 
-    private static final Logger logger = LoggerManager.getLogger();
+    private static final Logger logger = LoggerFactory.getLogger(DrawingFragment.class);
 
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
@@ -103,7 +103,7 @@ public class DrawingFragment extends Fragment {
 //        });
 
 
-        logger.d("onCreateView {}", (spiceManager != null));
+        logger.debug("onCreateView {}", (spiceManager != null));
 
         // Do this last so everything is setup before handling events
         mEventBus.register(this);
@@ -134,7 +134,7 @@ public class DrawingFragment extends Fragment {
 
     private void saveEtch() {
         if (mCoordinates == null) {
-            logger.d("Unknown location, can't set etch.");
+            logger.debug("Unknown location, can't set etch.");
             return;
         }
         mLoadingLayout.setVisibility(View.VISIBLE);
@@ -152,14 +152,16 @@ public class DrawingFragment extends Fragment {
 
             @Override
             public void onRequestFailure(SpiceException e) {
+                mSaveEtchButton.setEnabled(true);
+                mSaveEtchButton.invalidate();
                 mLoadingLayout.setVisibility(View.INVISIBLE);
-                logger.e(e, "Error getting etch for location {}.", mCoordinates);
+                logger.error("Error getting etch for location {}.", mCoordinates, e);
             }
 
             @Override
             public void onRequestSuccess(Void v) {
                 mLoadingLayout.setVisibility(View.INVISIBLE);
-                logger.d("Saved etch {}.", saveEtchCommand);
+                logger.debug("Saved etch {}.", saveEtchCommand);
                 mEtchOverlayItem.scaleAndSetBitmap(currentBitmap);
                 mSaveEtchButton.setEnabled(true);
                 mSaveEtchButton.invalidate();
@@ -196,7 +198,7 @@ public class DrawingFragment extends Fragment {
 
             @Override
             public void onRequestFailure(SpiceException e) {
-                logger.e(e, "Error getting etch for location {}.", mCoordinates);
+                logger.error("Error getting etch for location {}.", mCoordinates, e);
                 mLoadingLayout.setVisibility(View.INVISIBLE);
             }
 

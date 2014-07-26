@@ -3,11 +3,14 @@ package kurtome.etch.app.robospice;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.InputStreamContent;
 import com.octo.android.robospice.request.googlehttpclient.GoogleHttpClientSpiceRequest;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.SaveEtchCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
 
 public class SaveEtchRequest extends GoogleHttpClientSpiceRequest<Void> {
     private static final Logger logger = LoggerFactory.getLogger(SaveEtchRequest.class);
@@ -31,9 +34,10 @@ public class SaveEtchRequest extends GoogleHttpClientSpiceRequest<Void> {
         );
 
 
-        ByteArrayContent content = new ByteArrayContent("application/gzip", command.getImageGzip());
+        InputStreamContent content = new InputStreamContent("application/gzip", new ByteArrayInputStream(command.getImageGzip()));
         HttpRequest request = getHttpRequestFactory()
                 .buildPostRequest(genericUrl, content);
+
 
         request.execute();
 
