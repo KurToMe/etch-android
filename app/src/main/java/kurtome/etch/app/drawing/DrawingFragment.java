@@ -1,12 +1,13 @@
 package kurtome.etch.app.drawing;
 
 import android.app.Fragment;
-import android.location.Location;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
@@ -24,11 +25,13 @@ import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
 import kurtome.etch.app.location.LocationHelper;
 import kurtome.etch.app.location.LocationUpdatedEvent;
+import kurtome.etch.app.openstreetmap.MapFragment;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
 
 import javax.inject.Inject;
+import java.util.zip.GZIPInputStream;
 
 public class DrawingFragment extends Fragment {
 
@@ -41,6 +44,8 @@ public class DrawingFragment extends Fragment {
     private View mRootView;
     private TextView mLocationText;
     private Coordinates mCoordinates;
+    private MapFragment.EtchOverlayItem mEtchOverlayItem;
+    private RelativeLayout mLoadingLayout;
 
     @Inject public SpiceManager spiceManager;
     @Inject public Bus mEventBus;
@@ -49,7 +54,6 @@ public class DrawingFragment extends Fragment {
     public void onStart() {
         super.onStart();
         spiceManager.start(getActivity());
-
     }
 
     @Override
@@ -71,6 +75,8 @@ public class DrawingFragment extends Fragment {
 
         mDrawingView = (DrawingView) mRootView.findViewById(R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
+
+        mLoadingLayout = (RelativeLayout) mRootView.findViewById(R.id.loadingPanel);
 
         mSaveEtchButton = (ImageButton) mRootView.findViewById(R.id.save_etch_btn);
         mSaveEtchButton.setOnClickListener(new View.OnClickListener() {
@@ -131,53 +137,75 @@ public class DrawingFragment extends Fragment {
             logger.d("Unknown location, can't set etch.");
             return;
         }
+        mLoadingLayout.setVisibility(View.VISIBLE);
 
-        final String image = mDrawingView.getCurrentImage();
+        final byte[] image = mDrawingView.getCurrentImage();
 
         final SaveEtchCommand saveEtchCommand = new SaveEtchCommand();
-        saveEtchCommand.setBase64Image(image);
-        Coordinates coordinates = new Coordinates();
-        coordinates.setLatitude(mCoordinates.getLatitude());
-        coordinates.setLongitude(mCoordinates.getLongitude());
-        saveEtchCommand.setCoordinates(coordinates);
+        final Bitmap currentBitmap = mDrawingView.getCopyOfCurrentBitmap();
+        saveEtchCommand.setCoordinates(mCoordinates);
+        saveEtchCommand.setImageGzip(image);
 
+        mSaveEtchButton.setEnabled(false);
+        mSaveEtchButton.invalidate();
         spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
+                mLoadingLayout.setVisibility(View.INVISIBLE);
                 logger.e(e, "Error getting etch for location {}.", mCoordinates);
             }
 
             @Override
             public void onRequestSuccess(Void v) {
+                mLoadingLayout.setVisibility(View.INVISIBLE);
                 logger.d("Saved etch {}.", saveEtchCommand);
+                mEtchOverlayItem.scaleAndSetBitmap(currentBitmap);
+                mSaveEtchButton.setEnabled(true);
+                mSaveEtchButton.invalidate();
             }
         });
     }
 
 
-    @Subscribe
     public void updateLocation(final LocationUpdatedEvent event) {
 //        mLocation = event.getLocation();
 //
-//        String text = mLocation.getLatitude() + " " + mLocation.getLongitude() + ", accuracy: " + mLocation.getAccuracy() + "m";
-//        mLocationText.setText(text);
+    }
+
+    private String format(int e6CooridnatePart) {
+        String s = String.valueOf(e6CooridnatePart);
+        int decimalPlace = 2;
+        if (s.startsWith("-")) {
+            decimalPlace = 3;
+        }
+        return s.substring(0, decimalPlace) + "." + s.substring(decimalPlace);
     }
 
     @Subscribe
     public void mapLocationSelected(MapLocationSelectedEvent event) {
+        mLoadingLayout.setVisibility(View.VISIBLE);
         mCoordinates = event.getCoordinates();
+        mEtchOverlayItem = event.getEtchOverlayItem();
+        String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
+        mLocationText.setText(text);
 
+        mSaveEtchButton.setEnabled(false);
+        mSaveEtchButton.invalidate();
         spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
                 logger.e(e, "Error getting etch for location {}.", mCoordinates);
+                mLoadingLayout.setVisibility(View.INVISIBLE);
             }
 
             @Override
             public void onRequestSuccess(Etch etch) {
-                mDrawingView.setCurrentImage(etch.getBase64Image());
+                mDrawingView.setCurrentImage(etch.getGzipImage());
+                mSaveEtchButton.setEnabled(true);
+                mSaveEtchButton.invalidate();
+                mLoadingLayout.setVisibility(View.INVISIBLE);
             }
         });
     }

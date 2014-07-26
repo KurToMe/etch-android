@@ -7,25 +7,25 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 public class Coordinates {
 
     @Key
-    private double latitude;
+    private int latitudeE6;
 
     @Key
-    private double longitude;
+    private int longitudeE6;
 
-    public double getLatitude() {
-        return latitude;
+    public int getLatitudeE6() {
+        return latitudeE6;
     }
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
+    public void setLatitudeE6(int latitudeE6) {
+        this.latitudeE6 = latitudeE6;
     }
 
-    public double getLongitude() {
-        return longitude;
+    public int getLongitudeE6() {
+        return longitudeE6;
     }
 
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
+    public void setLongitudeE6(int longitudeE6) {
+        this.longitudeE6 = longitudeE6;
     }
 
     @Override

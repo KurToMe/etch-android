@@ -22,6 +22,7 @@ import com.octo.android.robospice.request.listener.RequestListener;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
 import com.squareup.otto.Subscribe;
+import kurtome.etch.app.GzipUtils;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
@@ -62,7 +63,7 @@ public class MapFragment extends Fragment {
 
         private void goToSelectedEtch(EtchOverlayItem etchItem) {
             mLastSelectedEvent = new MapLocationSelectedEvent();
-            mLastSelectedEvent.setCoordinates(etchItem.getEtchCoordinates());
+            mLastSelectedEvent.setEtchOverlayItem(etchItem);
             mEventBus.post(mLastSelectedEvent);
         }
 
@@ -354,8 +355,10 @@ public class MapFragment extends Fragment {
         attemptAddOverlaysToMapBasedOnLocation();
     }
 
-    private static class EtchOverlayItem extends OverlayItem {
+    public class EtchOverlayItem extends OverlayItem {
         private Coordinates mEtchCoordinates;
+        private Canvas mCanvas;
+        private int mEtchSize;
 
         public EtchOverlayItem(String aTitle, String aSnippet, GeoPoint aGeoPoint) {
             super(aTitle, aSnippet, aGeoPoint);
@@ -367,6 +370,46 @@ public class MapFragment extends Fragment {
 
         public void setEtchCoordinates(Coordinates etchCoordinates) {
             mEtchCoordinates = etchCoordinates;
+        }
+
+        public void initializeMarker(int etchSize) {
+            mEtchSize = etchSize;
+            Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
+            mCanvas = new Canvas(bitmap);
+            Paint paint = new Paint();
+            paint.setStrokeWidth(2);
+            paint.setColor(Color.GRAY);
+            mCanvas.drawLine(1, 1, 1, etchSize - 1, paint); // to lower left
+            mCanvas.drawLine(1, etchSize - 1, etchSize - 1, etchSize - 1, paint); // to lower right
+            mCanvas.drawLine(etchSize - 1, etchSize - 1, etchSize - 1, 1, paint); // to upper right
+            mCanvas.drawLine(etchSize - 1, 1, 1, 1, paint); // to upper left
+            setMarker(new BitmapDrawable(MapFragment.this.getResources(), bitmap));
+        }
+
+        public void fetchEtch(final Coordinates coordinates) {
+            spiceManager.execute(new GetEtchRequest(coordinates), new RequestListener<Etch>() {
+
+                @Override
+                public void onRequestFailure(SpiceException e) {
+                    logger.e(e, "Error getting etch for location {}.", coordinates);
+                }
+
+                @Override
+                public void onRequestSuccess(Etch etch) {
+                    if (etch.getGzipImage().length > 0) {
+                        byte[] bytes = GzipUtils.unzip(etch.getGzipImage());
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        scaleAndSetBitmap(bitmap);
+                    }
+                }
+            });
+        }
+
+        public void scaleAndSetBitmap(Bitmap bitmap) {
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, mEtchSize, mEtchSize, false);
+            mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.SRC);
+            mCanvas.drawBitmap(scaledBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+            mMapView.invalidate();
         }
     }
 
@@ -402,7 +445,7 @@ public class MapFragment extends Fragment {
 
         List<OverlayItem> items = Lists.newArrayList();
         GeoPoint exactCenter = new GeoPoint(latitude, longitude);
-        GeoPoint point = CoordinateUtils.truncate(exactCenter);
+        GeoPoint point = CoordinateUtils.roundToMinIncrement(exactCenter);
 
         int initialOffset = (-ETCH_GRID_SIZE / 2);
         int maxOffset = -initialOffset;
@@ -458,35 +501,10 @@ public class MapFragment extends Fragment {
 //        Point lowerLeft = new Point(upperLeft.x, upperLeft.y + size);
 //        Point lowerRight = new Point(upperLeft.x + size, upperLeft.y + size);
 
-        Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
-        final Canvas canvas = new Canvas(bitmap);
-        Paint paint = new Paint();
-        paint.setStrokeWidth(2);
-        paint.setColor(Color.GRAY);
-        canvas.drawLine(1, 1, 1, etchSize - 1, paint); // to lower left
-        canvas.drawLine(1, etchSize - 1, etchSize - 1, etchSize - 1, paint); // to lower right
-        canvas.drawLine(etchSize - 1, etchSize - 1, etchSize - 1, 1, paint); // to upper right
-        canvas.drawLine(etchSize - 1, 1, 1, 1, paint); // to upper left
-        etchItem.setMarker(new BitmapDrawable(getResources(), bitmap));
+        etchItem.initializeMarker(etchSize);
 
         final Coordinates coordinates = CoordinateUtils.convert(etchPoint);
-        spiceManager.execute(new GetEtchRequest(coordinates), new RequestListener<Etch>() {
-
-            @Override
-            public void onRequestFailure(SpiceException e) {
-                logger.e(e, "Error getting etch for location {}.", coordinates);
-            }
-
-            @Override
-            public void onRequestSuccess(Etch etch) {
-                if (etch.getBase64Image() != null) {
-                    byte[] bytes = Base64.decodeBase64(etch.getBase64Image());
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    canvas.drawBitmap(Bitmap.createScaledBitmap(bitmap, etchSize, etchSize, false), 0, 0, DrawingBrush.BASIC_PAINT);
-                    mMapView.invalidate();
-                }
-            }
-        });
+        etchItem.fetchEtch(coordinates);
 
         return etchItem;
     }

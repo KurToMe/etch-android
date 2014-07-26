@@ -6,11 +6,20 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
+import com.noveogroup.android.log.Logger;
+import com.noveogroup.android.log.LoggerManager;
+import kurtome.etch.app.GzipUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class DrawingView extends View {
+    private static final Logger logger = LoggerManager.getLogger();
 
     private Path drawPath;
     private Canvas drawCanvas;
@@ -89,29 +98,44 @@ public class DrawingView extends View {
     }
 
 
-    public void setCurrentImage(String base64Image) {
+    public void setCurrentImage(byte[] gzipImage) {
         clearCanvas();
-        if (StringUtils.isNotBlank(base64Image)) {
-            drawEtchToCanvas(base64Image);
+        if (gzipImage.length > 0) {
+            drawEtchToCanvas(gzipImage);
         }
         invalidate();
     }
 
-    private void drawEtchToCanvas(String base64Image) {
-        byte[] bytes = Base64.decodeBase64(base64Image);
-        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        drawCanvas.drawBitmap(bitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+    private void drawEtchToCanvas(byte[] gzipImage) {
+        byte[] bytes = GzipUtils.unzip(gzipImage);
+        if (bytes != null) {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            drawCanvas.drawBitmap(bitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+        }
     }
 
     private void clearCanvas() {
         drawCanvas.drawColor(Color.WHITE);
     }
 
-    public String getCurrentImage() {
+    public Bitmap getCopyOfCurrentBitmap() {
+        return canvasBitmap.copy(Bitmap.Config.ARGB_8888, false);
+    }
+
+    public byte[] getCurrentImage() {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        canvasBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        byte[] bytes = stream.toByteArray();
-        String base64 = Base64.encodeBase64String(bytes);
-        return base64;
+        GZIPOutputStream gzipStream = null;
+        try {
+            gzipStream = new GZIPOutputStream(stream);
+            canvasBitmap.compress(Bitmap.CompressFormat.PNG, 100, gzipStream);
+//            byte[] bytes = new byte[stream.size()];
+//            gzipStream.write(bytes);
+            gzipStream.close();
+            return stream.toByteArray();
+        }
+        catch (IOException e) {
+            logger.e("Unable to get",e);
+            return null;
+        }
     }
 }

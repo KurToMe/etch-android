@@ -3,6 +3,8 @@ package kurtome.etch.app.coordinates;
 import kurtome.etch.app.domain.Coordinates;
 import org.osmdroid.util.GeoPoint;
 
+import java.math.BigDecimal;
+
 public class CoordinateUtils {
 
 
@@ -12,42 +14,44 @@ public class CoordinateUtils {
       */
     private static final double DECIMAL_DIGITS = 4;
 
-    private static final double MIN_INCREMENT = 1.0 * (Math.pow(10, -DECIMAL_DIGITS));
+    // 9.123456E6 -> 9123456
+    private static final int MIN_INCREMENT = 100;
 
     /**
      * This must match server-side truncating to ensure we always
      * get the same coordinates.
      */
-    public static double truncate(double d) {
-        double multiplier = Math.pow(10, DECIMAL_DIGITS);
-        return Math.round(d * multiplier) / multiplier;
+    public static int roundToMinIncrement(int partE6) {
+        int truncated = Math.round(partE6 / MIN_INCREMENT);
+        int result = truncated * MIN_INCREMENT;
+        return result;
     }
 
     public static Coordinates incrementWest(Coordinates coordinates) {
         Coordinates newCoordinates = new Coordinates();
-        coordinates.setLatitude(coordinates.getLatitude());
-        coordinates.setLongitude(coordinates.getLongitude() - MIN_INCREMENT);
+        coordinates.setLatitudeE6(coordinates.getLatitudeE6());
+        coordinates.setLongitudeE6(coordinates.getLongitudeE6() - MIN_INCREMENT);
         return newCoordinates;
     }
 
     public static Coordinates incrementEast(Coordinates coordinates) {
         Coordinates newCoordinates = new Coordinates();
-        coordinates.setLatitude(coordinates.getLatitude());
-        coordinates.setLongitude(coordinates.getLongitude() + MIN_INCREMENT);
+        coordinates.setLatitudeE6(coordinates.getLatitudeE6());
+        coordinates.setLongitudeE6(coordinates.getLongitudeE6() + MIN_INCREMENT);
         return newCoordinates;
     }
 
     public static Coordinates incrementNorth(Coordinates coordinates) {
         Coordinates newCoordinates = new Coordinates();
-        coordinates.setLatitude(coordinates.getLatitude() + MIN_INCREMENT);
-        coordinates.setLongitude(coordinates.getLongitude());
+        coordinates.setLatitudeE6(coordinates.getLatitudeE6() + MIN_INCREMENT);
+        coordinates.setLongitudeE6(coordinates.getLongitudeE6());
         return newCoordinates;
     }
 
     public static Coordinates incrementSouth(Coordinates coordinates) {
         Coordinates newCoordinates = new Coordinates();
-        coordinates.setLatitude(coordinates.getLatitude() - MIN_INCREMENT);
-        coordinates.setLongitude(coordinates.getLongitude());
+        coordinates.setLatitudeE6(coordinates.getLatitudeE6() - MIN_INCREMENT);
+        coordinates.setLongitudeE6(coordinates.getLongitudeE6());
         return newCoordinates;
     }
 
@@ -83,26 +87,29 @@ public class CoordinateUtils {
         return newGeoPoint;
     }
 
-    public static GeoPoint truncate(GeoPoint point) {
+    public static GeoPoint roundToMinIncrement(GeoPoint point) {
         return new GeoPoint(
-                truncate(point.getLatitude()),
-                truncate(point.getLongitude())
+                roundToMinIncrement(point.getLatitudeE6()),
+                roundToMinIncrement(point.getLongitudeE6())
         );
     }
 
     public static GeoPoint offset(GeoPoint point, int latOffset, int longOffset) {
-        int latSign = point.getLatitude() > 0 ? 1 : -1;
-        int longSign = point.getLongitude() > 0 ? 1 : -1;
-        return new GeoPoint(
-                point.getLatitude() + (MIN_INCREMENT * latOffset * latSign),
-                point.getLongitude() + (MIN_INCREMENT * longOffset * longSign)
+        int latSign = point.getLatitudeE6() > 0 ? 1 : -1;
+        int longSign = point.getLongitudeE6() > 0 ? 1 : -1;
+        int latitudeE6 = point.getLatitudeE6() + (MIN_INCREMENT * latOffset * latSign);
+        int longitudeE6 = point.getLongitudeE6() + (MIN_INCREMENT * longOffset * longSign);
+        GeoPoint geoPoint = new GeoPoint(
+                latitudeE6,
+                longitudeE6
         );
+        return geoPoint;
     }
 
     public static Coordinates convert(GeoPoint point) {
         Coordinates coordinates = new Coordinates();
-        coordinates.setLatitude(point.getLatitude());
-        coordinates.setLongitude(point.getLongitude());
+        coordinates.setLatitudeE6(point.getLatitudeE6());
+        coordinates.setLongitudeE6(point.getLongitudeE6());
         return coordinates;
     }
 }

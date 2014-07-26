@@ -1,0 +1,16 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="true"  >
+        <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+            <item android:drawable="@android:drawable/ic_menu_save" />
+        </layer-list>
+    </item>
+
+    <item android:state_enabled="false"  >
+        <layer-list  xmlns:android="http://schemas.android.com/apk/res/android"
+                >
+            <item android:drawable="@android:drawable/ic_menu_upload"
+                    />
+        </layer-list>
+    </item>
+
+</selector>

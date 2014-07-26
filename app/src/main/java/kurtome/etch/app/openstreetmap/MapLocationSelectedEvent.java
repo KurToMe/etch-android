@@ -3,13 +3,17 @@ package kurtome.etch.app.openstreetmap;
 import kurtome.etch.app.domain.Coordinates;
 
 public class MapLocationSelectedEvent {
-    private Coordinates mCoordinates;
+    private MapFragment.EtchOverlayItem mEtchOverlayItem;
 
     public Coordinates getCoordinates() {
-        return mCoordinates;
+        return mEtchOverlayItem.getEtchCoordinates();
     }
 
-    public void setCoordinates(Coordinates coordinates) {
-        mCoordinates = coordinates;
+    public MapFragment.EtchOverlayItem getEtchOverlayItem() {
+        return mEtchOverlayItem;
+    }
+
+    public void setEtchOverlayItem(MapFragment.EtchOverlayItem etchOverlayItem) {
+        mEtchOverlayItem = etchOverlayItem;
     }
 }
