@@ -1,6 +1,7 @@
 package kurtome.etch.app.activity;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.location.Location;
 import android.os.Bundle;
 import com.noveogroup.android.log.Logger;
@@ -28,6 +29,7 @@ public class MainActivity extends Activity {
     @Inject Bus mEventBus;
 
     private static final String DRAWING_ADDED_BACKSTACK = "drawing-added";
+    private static final String DRAWING_FRAGMENT_TAG = "drawing-fragment-tag";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,22 +52,35 @@ public class MainActivity extends Activity {
         mLocationProducer.refreshLocation();
     }
 
+    private boolean isFragmentVisible(String tag) {
+        Fragment fragment = getFragmentManager().findFragmentByTag(tag);
+        if (fragment != null) {
+            return fragment.isVisible();
+        }
+        else {
+            return false;
+        }
+    }
+
     private void goToDrawingFragment() {
+        if (isFragmentVisible(DRAWING_FRAGMENT_TAG)) {
+            return;
+        }
+
         getFragmentManager().beginTransaction()
                 .setCustomAnimations(R.animator.enter_slide_up, R.animator.exit_slide_down, R.animator.enter_slide_up, R.animator.exit_slide_down)
-                .add(R.id.container, new DrawingFragment())
+                .add(R.id.container, new DrawingFragment(), DRAWING_FRAGMENT_TAG)
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
                 .commit();
     }
 
     @Subscribe
     public void deviceLocationChanged(LocationUpdatedEvent event) {
-        if (mLocation == null) {
-            // first location acquired to go map
-            getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, 0);
-        }
+//        if (mLocation == null && !isFinishing()) {
+//            // first location acquired to go map
+//            getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, 0);
+//        }
         mLocation = event.getLocation();
-
     }
 
     @Subscribe
