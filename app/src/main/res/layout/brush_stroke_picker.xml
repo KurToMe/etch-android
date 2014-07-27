@@ -3,6 +3,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
               android:layout_width="match_parent"
+              android:padding="5dp"
+              android:layout_margin="5dp"
               android:layout_height="match_parent">
 
     <TextView
@@ -12,6 +14,7 @@
             android:layout_marginTop="10dp"
             android:gravity="left"
             android:text="Stroke Width"
+            android:padding="5dp"
             android:textStyle="bold"
             />
     <TextView
@@ -21,12 +24,14 @@
         android:layout_marginTop="5dp"
         android:gravity="center"
         android:text="5px"
+        android:padding="5dp"
         android:textStyle="normal" />
 
     <SeekBar
         android:id="@+id/stroke_width_seek"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:padding="5dp"
         android:layout_margin="5dp" />
 
 
@@ -38,14 +43,37 @@
             android:gravity="left"
             android:text="Stroke Mode"
             android:textStyle="bold"
+            android:padding="5dp"
             />
-    <Switch
-            android:id="@+id/stroke_mode_btn"
+    <RadioGroup
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center"
-            android:textOn="Normal"
-            android:textOff="Replace"
-            />
+            android:gravity="right"
+            android:layout_margin="5dp"
+            android:padding="5dp"
+            >
+
+        <RadioButton
+            android:id="@+id/brush_mode_normal_radio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Normal"
+            android:checked="true" />
+
+        <RadioButton
+                android:id="@+id/brush_mode_replace_radio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Replace"
+                />
+
+        <RadioButton
+                android:id="@+id/brush_mode_under_radio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Under"
+                />
+
+    </RadioGroup>
+
 </LinearLayout>

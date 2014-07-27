@@ -1,28 +1,24 @@
 package kurtome.etch.app.drawing;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Xfermode;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.CompoundButton;
-import android.widget.SeekBar;
-import android.widget.Switch;
-import android.widget.TextView;
+import android.widget.*;
 import kurtome.etch.app.R;
 
 public class BrushStrokeDialog extends AlertDialog {
 
     private static final int MIN_STROKE_WIDTH = 3;
-    private static final int MAX_STROKE_WIDTH = 30;
+    private static final int MAX_STROKE_WIDTH = 50;
 
     private SeekBar mStrokeWidthSeek;
     private TextView mStrokeWidthText;
     private DrawingBrush mDrawingBrush;
-    private Switch mStrokeModeButton;
+    private RadioButton mStrokeNormalModeButton;
+    private RadioButton mStrokeReplaceModeButton;
+    private RadioButton mStrokeUnderModeButton;
 
     public BrushStrokeDialog(Context context) {
         super(context);
@@ -51,22 +47,47 @@ public class BrushStrokeDialog extends AlertDialog {
             }
         });
 
-        mStrokeModeButton = (Switch) layoutView.findViewById(R.id.stroke_mode_btn);
-        mStrokeModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mStrokeNormalModeButton = (RadioButton) layoutView.findViewById(R.id.brush_mode_normal_radio);
+        mStrokeNormalModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                setStrokeMode(isChecked);
+                if (isChecked) {
+                    setStrokeModeNormal();
+                }
+            }
+        });
+
+        mStrokeReplaceModeButton = (RadioButton) layoutView.findViewById(R.id.brush_mode_replace_radio);
+        mStrokeReplaceModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    setStrokeModeReplace();
+                }
+            }
+        });
+
+        mStrokeUnderModeButton = (RadioButton) layoutView.findViewById(R.id.brush_mode_under_radio);
+        mStrokeUnderModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    setStrokeModeUnder();
+                }
             }
         });
     }
 
-    private void setStrokeMode(boolean isNormal) {
-        PorterDuff.Mode mode = PorterDuff.Mode.SRC_OVER;
-        if (!isNormal) {
-            // Replace
-            mode = PorterDuff.Mode.SRC;
-        }
-        mDrawingBrush.setMode(mode);
+    private void setStrokeModeNormal() {
+        mDrawingBrush.setMode(PorterDuff.Mode.SRC_OVER);
+    }
+
+    private void setStrokeModeReplace() {
+        mDrawingBrush.setMode(PorterDuff.Mode.SRC);
+    }
+
+    private void setStrokeModeUnder() {
+        mDrawingBrush.setMode(PorterDuff.Mode.DST_OVER);
     }
 
 
@@ -76,7 +97,7 @@ public class BrushStrokeDialog extends AlertDialog {
         mDrawingBrush.setStrokeWidth(newStrokeWidth);
 
 
-        mStrokeModeButton.setChecked(mDrawingBrush.getMode() == PorterDuff.Mode.SRC_OVER);
+        mStrokeNormalModeButton.setChecked(mDrawingBrush.getMode() == PorterDuff.Mode.SRC_OVER);
     }
 
     private int calcStrokeWidth(int percent) {
