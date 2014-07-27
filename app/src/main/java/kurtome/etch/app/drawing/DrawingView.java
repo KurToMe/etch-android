@@ -7,21 +7,21 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
-import kurtome.etch.app.GzipUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
 
 public class DrawingView extends View {
+
     private static final Logger logger = LoggerManager.getLogger();
 
-    private Path drawPath;
+    private Path mDrawPath;
     private Canvas mDrawCanvas;
-    private Bitmap canvasBitmap;
-    private DrawingBrush currentBrush;
+    private Bitmap mCanvasBitmap;
+    private DrawingBrush mCurrentBrush;
 
-    private float lastX, lastY;
+    private float mLastX, mLastY;
 
     public static final int IMAGE_SIZE_PIXELS = 1000;
 
@@ -31,25 +31,25 @@ public class DrawingView extends View {
     }
 
     private void setupDrawing() {
-        drawPath = new Path();
-        currentBrush = new DrawingBrush();
+        mDrawPath = new Path();
+        mCurrentBrush = new DrawingBrush();
     }
 
     //view assigned size
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        canvasBitmap = Bitmap.createBitmap(IMAGE_SIZE_PIXELS, IMAGE_SIZE_PIXELS, Bitmap.Config.ARGB_8888);
+        mCanvasBitmap = Bitmap.createBitmap(IMAGE_SIZE_PIXELS, IMAGE_SIZE_PIXELS, Bitmap.Config.ARGB_8888);
 
-        mDrawCanvas = new Canvas(canvasBitmap);
+        mDrawCanvas = new Canvas(mCanvasBitmap);
     }
 
     //draw view
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawBitmap(canvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
-        canvas.drawPath(drawPath, currentBrush.getPaint());
+        canvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+        //canvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
     }
 
     //respond to touch interaction
@@ -59,37 +59,61 @@ public class DrawingView extends View {
         float touchX = event.getX();
         float touchY = event.getY();
 
+        // NOTE: try not o create new objects in here, this is called A LOT
+
         //respond to down, move and up events
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                drawPath.moveTo(touchX, touchY);
+                mDrawPath.moveTo(touchX, touchY);
+                mDrawCanvas.save();
                 break;
             case MotionEvent.ACTION_MOVE:
-                quadPathTo(touchX, touchY);
+                mDrawCanvas.restore();
+                mDrawCanvas.save();
+                drawPathForMotion(event);
                break;
             case MotionEvent.ACTION_UP:
-//                drawPath.lineTo(touchX, touchY);
-                quadPathTo(touchX, touchY);
-                mDrawCanvas.drawPath(drawPath, currentBrush.getPaint());
-                drawPath = new Path();
+                mDrawCanvas.restore();
+                drawPathForMotion(event);
+//                mDrawCanvas.fl
+                mDrawPath.reset();
                 break;
             default:
                 return false;
         }
-        lastX = touchX;
-        lastY = touchY;
+        //mDrawCanvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+
+        mLastX = touchX;
+        mLastY = touchY;
         invalidate();
         return true;
     }
 
-    private void quadPathTo(float touchX, float touchY) {
+    private void drawPathForMotion(MotionEvent event) {
+//        mDrawPath.moveTo(mLastX, mLastY);
+        quadThroughMotionCoords(event);
+        mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+    }
+
+    private void quadThroughMotionCoords(MotionEvent event) {
+        int historySize = event.getHistorySize();
+        float historicalLastX = mLastX;
+        float historicalLastY = mLastY;
+        for (int historyPos = 0; historyPos < historySize; historyPos++) {
+            float x = event.getHistoricalX(historyPos);
+            float y = event.getHistoricalY(historyPos);
+            quadPathTo(historicalLastX, historicalLastY, x, y);
+        }
+    }
+
+    private void quadPathTo(float lastX, float lastY, float touchX, float touchY) {
         final float x2 = (touchX + lastX) / 2;
         final float y2 = (touchY + lastY) / 2;
-        drawPath.quadTo(x2, y2, touchX, touchY);
+        mDrawPath.quadTo(x2, y2, touchX, touchY);
     }
 
     public DrawingBrush getDrawingBrush()  {
-        return currentBrush;
+        return mCurrentBrush;
     }
 
 
@@ -106,7 +130,7 @@ public class DrawingView extends View {
     }
 
     public Bitmap getCopyOfCurrentBitmap() {
-        return canvasBitmap.copy(Bitmap.Config.ARGB_8888, false);
+        return mCanvasBitmap.copy(Bitmap.Config.ARGB_8888, false);
     }
 
     public byte[] getCurrentImage() {
@@ -114,7 +138,7 @@ public class DrawingView extends View {
         GZIPOutputStream gzipStream = null;
         try {
             gzipStream = new GZIPOutputStream(stream);
-            canvasBitmap.compress(Bitmap.CompressFormat.PNG, 100, gzipStream);
+            mCanvasBitmap.compress(Bitmap.CompressFormat.PNG, 100, gzipStream);
 //            byte[] bytes = new byte[stream.size()];
 //            gzipStream.write(bytes);
             gzipStream.close();

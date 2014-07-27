@@ -4,6 +4,16 @@
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
+
+    <TextView
+            android:id="@+id/stroke_width_label_txt"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="left"
+            android:text="Stroke Width"
+            android:textStyle="bold"
+            />
     <TextView
         android:id="@+id/stroke_width_txt"
         android:layout_width="fill_parent"
@@ -11,7 +21,7 @@
         android:layout_marginTop="5dp"
         android:gravity="center"
         android:text="5px"
-        android:textStyle="bold" />
+        android:textStyle="normal" />
 
     <SeekBar
         android:id="@+id/stroke_width_seek"
@@ -19,4 +29,23 @@
         android:layout_height="wrap_content"
         android:layout_margin="5dp" />
 
+
+    <TextView
+            android:id="@+id/stroke_mode_label_txt"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="left"
+            android:text="Stroke Mode"
+            android:textStyle="bold"
+            />
+    <Switch
+            android:id="@+id/stroke_mode_btn"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:textOn="Normal"
+            android:textOff="Replace"
+            />
 </LinearLayout>
