@@ -47,6 +47,8 @@ public class DrawingBrush {
     }
 
 
-
+    public void setStrokeWidth(int newStrokeWidth) {
+        paint.setStrokeWidth(newStrokeWidth);
+    }
 }
 

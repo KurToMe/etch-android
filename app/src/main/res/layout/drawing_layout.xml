@@ -2,7 +2,7 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#0FCCCCCC"
+              android:background="#00CCCCCC"
               android:orientation="vertical"
               tools:context=".MainActivity">
 
@@ -57,6 +57,17 @@
 
 
         <ImageButton
+                android:id="@+id/brush_stroke_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:alpha="1"
+                android:contentDescription="brush stroke picker"
+                android:src="@android:drawable/ic_menu_edit"/>
+
+
+        <ImageButton
                 android:id="@+id/save_etch_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -70,7 +81,7 @@
             android:id="@+id/loadingPanel"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center" >
+            android:gravity="right" >
 
             <ProgressBar
                 android:layout_width="wrap_content"

@@ -1,5 +1,7 @@
 package kurtome.etch.app.drawing;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -37,6 +39,7 @@ public class DrawingFragment extends Fragment {
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
     private ImageButton mColorButton;
+    private ImageButton mBrushStrokeButton;
     private ImageButton mSaveEtchButton;
     private View mRootView;
     private TextView mLocationText;
@@ -44,8 +47,8 @@ public class DrawingFragment extends Fragment {
     private MapFragment.EtchOverlayItem mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
 
-    @Inject public SpiceManager spiceManager;
-    @Inject public Bus mEventBus;
+    @Inject SpiceManager spiceManager;
+    @Inject Bus mEventBus;
 
     @Override
     public void onStart() {
@@ -67,8 +70,7 @@ public class DrawingFragment extends Fragment {
         super.onCreateView(inflater, container, savedInstanceState);
         ObjectGraphUtils.inject(this);
 
-
-        mRootView = inflater.inflate(R.layout.drawing_fragment, container, false);
+        mRootView = inflater.inflate(R.layout.drawing_layout, container, false);
 
         mDrawingView = (DrawingView) mRootView.findViewById(R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
@@ -80,6 +82,14 @@ public class DrawingFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 saveEtch();
+            }
+        });
+
+        mBrushStrokeButton = (ImageButton) mRootView.findViewById(R.id.brush_stroke_btn);
+        mBrushStrokeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showBrushStrokePicker();
             }
         });
 
@@ -99,6 +109,12 @@ public class DrawingFragment extends Fragment {
         mEventBus.register(this);
 
         return mRootView;
+    }
+
+    private void showBrushStrokePicker() {
+        BrushStrokeDialog brushStrokeDialog = new BrushStrokeDialog(getActivity());
+        brushStrokeDialog.setDrawingBrush(mDrawingBrush);
+        brushStrokeDialog.show();
     }
 
     @Override
