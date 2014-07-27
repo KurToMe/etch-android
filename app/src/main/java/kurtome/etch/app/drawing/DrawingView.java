@@ -16,12 +16,20 @@ public class DrawingView extends View {
 
     private static final Logger logger = LoggerManager.getLogger();
 
+    private static final int MAX_BREAK_COUNT = 500;
+
     private Path mDrawPath;
     private Canvas mDrawCanvas;
     private Bitmap mCanvasBitmap;
     private DrawingBrush mCurrentBrush;
 
     private float mLastX, mLastY;
+    private float mLastLastX, mLastLastY;
+
+    /**
+     * Some kind of crazy because too long a path causes performance issues.
+     */
+    private int mLastBreakCount;
 
     public static final int IMAGE_SIZE_PIXELS = 1000;
 
@@ -32,7 +40,7 @@ public class DrawingView extends View {
 
     private void setupDrawing() {
         mDrawPath = new Path();
-        mCurrentBrush = new DrawingBrush();
+        mCurrentBrush = new DrawingBrush(getContext());
     }
 
     //view assigned size
@@ -64,35 +72,60 @@ public class DrawingView extends View {
         //respond to down, move and up events
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                mLastBreakCount = 0;
+                mLastX = touchX;
+                mLastY = touchY;
                 mDrawPath.moveTo(touchX, touchY);
                 mDrawCanvas.save();
                 break;
             case MotionEvent.ACTION_MOVE:
-                mDrawCanvas.restore();
-                mDrawCanvas.save();
+                if (mLastBreakCount < MAX_BREAK_COUNT) {
+                    mDrawCanvas.save();
+                }
                 drawPathForMotion(event);
+                if (mLastBreakCount > MAX_BREAK_COUNT) {
+                    breakPath();
+                }
                break;
             case MotionEvent.ACTION_UP:
-                mDrawCanvas.restore();
                 drawPathForMotion(event);
-//                mDrawCanvas.fl
-                mDrawPath.reset();
+                breakPath();
                 break;
             default:
                 return false;
         }
-        //mDrawCanvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
 
+        mLastLastX = mLastX;
+        mLastLastY = mLastY;
         mLastX = touchX;
         mLastY = touchY;
         invalidate();
         return true;
     }
 
+    private void breakPath() {
+        mDrawPath.reset();
+        mLastBreakCount = 0;
+    }
+
     private void drawPathForMotion(MotionEvent event) {
-//        mDrawPath.moveTo(mLastX, mLastY);
+        if (mDrawCanvas.getSaveCount() > 0) {
+            // Since we are drawing to the canvas permanently on each motion event
+            // we need to do save/restore craziness to only draw each path once.
+            //
+            // The more sane (and performant) way to do this is by only drawing the part of the path
+            // we have made so far in onDraw and drawing it permanently to canvas in MOTION_UP....
+            // ...BUT  this causes issues with PorterDuff.Mode.SRC which we need for erasing etc.
+
+            mDrawCanvas.restore();
+        }
+
+        if (mLastBreakCount == 0) {
+            mDrawPath.moveTo(mLastLastX, mLastLastY);
+        }
         quadThroughMotionCoords(event);
         mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+        mLastBreakCount++;
     }
 
     private void quadThroughMotionCoords(MotionEvent event) {
@@ -103,7 +136,10 @@ public class DrawingView extends View {
             float x = event.getHistoricalX(historyPos);
             float y = event.getHistoricalY(historyPos);
             quadPathTo(historicalLastX, historicalLastY, x, y);
+            historicalLastX = x;
+            historicalLastY = y;
         }
+        quadPathTo(historicalLastX, historicalLastY, event.getX(), event.getY());
     }
 
     private void quadPathTo(float lastX, float lastY, float touchX, float touchY) {

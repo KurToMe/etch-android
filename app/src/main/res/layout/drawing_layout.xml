@@ -32,7 +32,7 @@
                 android:layout_marginTop="3dp"
                 android:layout_weight="1"
                 android:alpha="1"
-                android:background="#8FFFFFFF"/>
+                android:background="#9FFFFFFF"/>
 
                   </kurtome.etch.app.layout.ConstrainedCanvasLayout>
 

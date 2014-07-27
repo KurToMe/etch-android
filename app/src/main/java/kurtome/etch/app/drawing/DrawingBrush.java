@@ -1,7 +1,9 @@
 package kurtome.etch.app.drawing;
 
+import android.content.Context;
 import android.graphics.*;
 import com.google.common.collect.Lists;
+import kurtome.etch.app.R;
 
 import java.util.List;
 import java.util.Random;
@@ -21,17 +23,22 @@ public class DrawingBrush {
 
     private Paint paint;
 
-    public DrawingBrush() {
+    public DrawingBrush(Context context) {
         paint = createBasicPaint();
         paint.setStrokeWidth(3);
         paint.setStyle(Paint.Style.STROKE);
         paint.setFilterBitmap(true);
-        paint.setStrokeJoin(Paint.Join.MITER);
+        paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStrokeCap(Paint.Cap.BUTT);
         paint.setColor(Color.DKGRAY);
+
+//        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.clean_gray_paper);
+//        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+//        paint.setShader(new LinearGradient());
+//
 //        paint.setAlpha(200);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setMaskFilter(new BlurMaskFilter(paint.getStrokeWidth() / 4, BlurMaskFilter.Blur.NORMAL));
+        paint.setMaskFilter(new BlurMaskFilter(paint.getStrokeWidth()/2, BlurMaskFilter.Blur.NORMAL));
 
         mMode = PorterDuff.Mode.SRC_OVER;
         paint.setXfermode(new PorterDuffXfermode(mMode));
