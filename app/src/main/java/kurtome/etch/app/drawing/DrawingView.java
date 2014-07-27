@@ -5,24 +5,19 @@ import android.graphics.*;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import com.google.api.client.repackaged.org.apache.commons.codec.binary.Base64;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
 import kurtome.etch.app.GzipUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class DrawingView extends View {
     private static final Logger logger = LoggerManager.getLogger();
 
     private Path drawPath;
-    private Canvas drawCanvas;
+    private Canvas mDrawCanvas;
     private Bitmap canvasBitmap;
     private DrawingBrush currentBrush;
 
@@ -46,7 +41,7 @@ public class DrawingView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         canvasBitmap = Bitmap.createBitmap(IMAGE_SIZE_PIXELS, IMAGE_SIZE_PIXELS, Bitmap.Config.ARGB_8888);
 
-        drawCanvas = new Canvas(canvasBitmap);
+        mDrawCanvas = new Canvas(canvasBitmap);
     }
 
     //draw view
@@ -75,7 +70,7 @@ public class DrawingView extends View {
             case MotionEvent.ACTION_UP:
 //                drawPath.lineTo(touchX, touchY);
                 quadPathTo(touchX, touchY);
-                drawCanvas.drawPath(drawPath, currentBrush.getPaint());
+                mDrawCanvas.drawPath(drawPath, currentBrush.getPaint());
                 drawPath = new Path();
                 break;
             default:
@@ -99,7 +94,7 @@ public class DrawingView extends View {
 
 
     public void setCurrentImage(byte[] gzipImage) {
-        clearCanvas();
+        CanvasUtils.clearCanvas(mDrawCanvas);
         if (gzipImage.length > 0) {
             drawEtchToCanvas(gzipImage);
         }
@@ -107,15 +102,7 @@ public class DrawingView extends View {
     }
 
     private void drawEtchToCanvas(byte[] gzipImage) {
-        byte[] bytes = GzipUtils.unzip(gzipImage);
-        if (bytes != null) {
-            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-            drawCanvas.drawBitmap(bitmap, 0, 0, DrawingBrush.BASIC_PAINT);
-        }
-    }
-
-    private void clearCanvas() {
-        drawCanvas.drawColor(Color.WHITE);
+        CanvasUtils.drawBitmapFromGzip(mDrawCanvas, gzipImage);
     }
 
     public Bitmap getCopyOfCurrentBitmap() {

@@ -14,6 +14,7 @@ import android.util.DisplayMetrics;
 import android.view.*;
 import com.google.api.client.util.Base64;
 import com.google.api.client.util.Lists;
+import com.google.common.base.Optional;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
 import com.octo.android.robospice.SpiceManager;
@@ -28,6 +29,7 @@ import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
+import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
@@ -136,6 +138,7 @@ public class MapFragment extends Fragment {
             @Override
             public void scrollBy(int x, int y) {
                 // disable scrolling
+                // TODO - sometimes scrolling is still possible, need to do a better job preventing that
                 //super.scrollBy(x, y);
             }
 
@@ -308,8 +311,8 @@ public class MapFragment extends Fragment {
                 @Override
                 public void onRequestSuccess(Etch etch) {
                     if (etch.getGzipImage().length > 0) {
-                        byte[] bytes = GzipUtils.unzip(etch.getGzipImage());
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
                         scaleAndSetBitmap(bitmap);
                     }
                 }
@@ -317,9 +320,9 @@ public class MapFragment extends Fragment {
         }
 
         public void scaleAndSetBitmap(Bitmap bitmap) {
-            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, mEtchSize, mEtchSize, false);
-            mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.SRC);
-            mCanvas.drawBitmap(scaledBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+            CanvasUtils.clearCanvas(mCanvas);
+            Optional<Integer> scaleSize = Optional.of(mEtchSize);
+            CanvasUtils.drawBitmap(mCanvas, bitmap, scaleSize);
             mMapView.invalidate();
         }
     }
@@ -397,8 +400,6 @@ public class MapFragment extends Fragment {
     }
 
     private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint, int etchGridX, int etchGridY) {
-
-
         final int etchSize = mMapView.getWidth() / ETCH_GRID_SIZE;
 
         Point etchGridOrigin = etchGridUpperLeft();

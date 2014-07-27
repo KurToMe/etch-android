@@ -21,8 +21,6 @@ import kurtome.etch.app.colorpickerview.view.ColorPickerView;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
-import kurtome.etch.app.location.LocationHelper;
-import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.openstreetmap.MapFragment;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
@@ -31,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.zip.GZIPInputStream;
 
 public class DrawingFragment extends Fragment {
 
@@ -71,7 +68,7 @@ public class DrawingFragment extends Fragment {
         ObjectGraphUtils.inject(this);
 
 
-        mRootView = inflater.inflate(R.layout.fragment_main, container, false);
+        mRootView = inflater.inflate(R.layout.drawing_fragment, container, false);
 
         mDrawingView = (DrawingView) mRootView.findViewById(R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();

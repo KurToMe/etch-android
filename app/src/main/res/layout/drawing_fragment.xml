@@ -18,7 +18,7 @@
                   xmlns:tools="http://schemas.android.com/tools"
                   android:layout_width="fill_parent"
                   android:layout_height="fill_parent"
-                  android:background="#FFCCCCCC"
+                  android:background="#00CCCCCC"
                   android:orientation="vertical"
                   tools:context=".MainActivity">
 
@@ -32,7 +32,7 @@
                 android:layout_marginTop="3dp"
                 android:layout_weight="1"
                 android:alpha="1"
-                android:background="#FFFFFFFF"/>
+                android:background="#8FFFFFFF"/>
 
                   </kurtome.etch.app.layout.ConstrainedCanvasLayout>
 
