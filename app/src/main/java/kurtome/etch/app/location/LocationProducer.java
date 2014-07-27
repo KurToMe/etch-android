@@ -12,8 +12,9 @@ public class LocationProducer {
     @Inject Bus mEventBus;
 
     private LocationHelper mLocationHelper;
-
     private LocationUpdatedEvent mLastEvent;
+
+    private static final float MIN_ACCURACY_METERS = 50;
 
     public LocationProducer(Activity activity) {
         ObjectGraphUtils.inject(activity, this);
@@ -21,7 +22,7 @@ public class LocationProducer {
         mEventBus.register(this);
 
         mLocationHelper = new LocationHelper(activity);
-        mLocationHelper.setAccuracy(100f);
+        mLocationHelper.setAccuracy(MIN_ACCURACY_METERS);
     }
 
     public void refreshLocation() {
@@ -33,7 +34,6 @@ public class LocationProducer {
                 locationUpdatedEvent.setLocation(location);
                 mLastEvent = locationUpdatedEvent;
                 mEventBus.post(locationUpdatedEvent);
-
             }
         });
     }

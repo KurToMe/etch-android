@@ -95,13 +95,6 @@ public class DrawingFragment extends Fragment {
         });
 
         mLocationText = (TextView) mRootView.findViewById(R.id.location_txt);
-//        mLocationText.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                refreshLocation();
-//            }
-//        });
-
 
         logger.debug("onCreateView {}", (spiceManager != null));
 
@@ -132,12 +125,35 @@ public class DrawingFragment extends Fragment {
         mDrawingBrush.setColor(color);
     }
 
+
+    private void showLoader() {
+        mLoadingLayout.setVisibility(View.VISIBLE);
+    }
+
+    private void hideLoader() {
+        mLoadingLayout.setVisibility(View.INVISIBLE);
+    }
+
+    private void setSaveEnabled(boolean enabled) {
+        mSaveEtchButton.setEnabled(enabled);
+        mSaveEtchButton.invalidate();
+    }
+
+    private void startLoading() {
+        showLoader();
+        setSaveEnabled(false);
+    }
+
+    private void endLoading() {
+        hideLoader();
+        setSaveEnabled(true);
+    }
+
     private void saveEtch() {
         if (mCoordinates == null) {
             logger.debug("Unknown location, can't set etch.");
             return;
         }
-        mLoadingLayout.setVisibility(View.VISIBLE);
 
         final byte[] image = mDrawingView.getCurrentImage();
 
@@ -146,34 +162,27 @@ public class DrawingFragment extends Fragment {
         saveEtchCommand.setCoordinates(mCoordinates);
         saveEtchCommand.setImageGzip(image);
 
-        mSaveEtchButton.setEnabled(false);
-        mSaveEtchButton.invalidate();
+        startLoading();
+
         spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
-                mSaveEtchButton.setEnabled(true);
-                mSaveEtchButton.invalidate();
-                mLoadingLayout.setVisibility(View.INVISIBLE);
                 logger.error("Error getting etch for location {}.", mCoordinates, e);
+                endLoading();
             }
 
             @Override
             public void onRequestSuccess(Void v) {
-                mLoadingLayout.setVisibility(View.INVISIBLE);
                 logger.debug("Saved etch {}.", saveEtchCommand);
+
                 mEtchOverlayItem.scaleAndSetBitmap(currentBitmap);
-                mSaveEtchButton.setEnabled(true);
-                mSaveEtchButton.invalidate();
+
+                endLoading();
             }
         });
     }
 
-
-    public void updateLocation(final LocationUpdatedEvent event) {
-//        mLocation = event.getLocation();
-//
-    }
 
     private String format(int e6CooridnatePart) {
         String s = String.valueOf(e6CooridnatePart);
@@ -184,30 +193,27 @@ public class DrawingFragment extends Fragment {
         return s.substring(0, decimalPlace) + "." + s.substring(decimalPlace);
     }
 
+
     @Subscribe
     public void mapLocationSelected(MapLocationSelectedEvent event) {
-        mLoadingLayout.setVisibility(View.VISIBLE);
         mCoordinates = event.getCoordinates();
         mEtchOverlayItem = event.getEtchOverlayItem();
         String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
         mLocationText.setText(text);
 
-        mSaveEtchButton.setEnabled(false);
-        mSaveEtchButton.invalidate();
+        startLoading();
         spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {
 
             @Override
             public void onRequestFailure(SpiceException e) {
                 logger.error("Error getting etch for location {}.", mCoordinates, e);
-                mLoadingLayout.setVisibility(View.INVISIBLE);
+                endLoading();
             }
 
             @Override
             public void onRequestSuccess(Etch etch) {
                 mDrawingView.setCurrentImage(etch.getGzipImage());
-                mSaveEtchButton.setEnabled(true);
-                mSaveEtchButton.invalidate();
-                mLoadingLayout.setVisibility(View.INVISIBLE);
+                endLoading();
             }
         });
     }
