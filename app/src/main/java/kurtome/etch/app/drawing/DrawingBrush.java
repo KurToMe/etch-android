@@ -20,7 +20,7 @@ public class DrawingBrush {
 
     public DrawingBrush() {
         mPaint = createBasicPaint();
-        mPaint.setStrokeWidth(2);
+        mPaint.setStrokeWidth(3);
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setFilterBitmap(true);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
@@ -31,7 +31,7 @@ public class DrawingBrush {
 //        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
 //        mPaint.setShader(new LinearGradient());
 //
-        mPaint.setAlpha(50);
+        mPaint.setAlpha(200);
 //        mPaint.setStyle(Paint.Style.STROKE);
 //        mPaint.setMaskFilter(new BlurMaskFilter(mPaint.getStrokeWidth() / 2, BlurMaskFilter.Blur.NORMAL));
 

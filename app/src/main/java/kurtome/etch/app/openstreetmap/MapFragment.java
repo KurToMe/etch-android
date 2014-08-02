@@ -290,6 +290,10 @@ public class MapFragment extends Fragment {
             mEtchSize = etchSize;
             Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
             mCanvas = new Canvas(bitmap);
+            setMarker(new BitmapDrawable(MapFragment.this.getResources(), bitmap));
+        }
+
+        private void drawBorder(int etchSize) {
             Paint paint = new Paint();
             paint.setStrokeWidth(2);
             paint.setColor(Color.GRAY);
@@ -297,7 +301,6 @@ public class MapFragment extends Fragment {
             mCanvas.drawLine(1, etchSize - 1, etchSize - 1, etchSize - 1, paint); // to lower right
             mCanvas.drawLine(etchSize - 1, etchSize - 1, etchSize - 1, 1, paint); // to upper right
             mCanvas.drawLine(etchSize - 1, 1, 1, 1, paint); // to upper left
-            setMarker(new BitmapDrawable(MapFragment.this.getResources(), bitmap));
         }
 
         public void fetchEtch(final Coordinates coordinates) {
@@ -315,6 +318,7 @@ public class MapFragment extends Fragment {
                         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
                         scaleAndSetBitmap(bitmap);
                     }
+                    drawBorder(mEtchSize);
                 }
             });
         }
