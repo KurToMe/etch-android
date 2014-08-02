@@ -2,11 +2,6 @@ package kurtome.etch.app.drawing;
 
 import android.content.Context;
 import android.graphics.*;
-import com.google.common.collect.Lists;
-import kurtome.etch.app.R;
-
-import java.util.List;
-import java.util.Random;
 
 public class DrawingBrush {
 
@@ -21,46 +16,46 @@ public class DrawingBrush {
         return paint;
     }
 
-    private Paint paint;
+    private Paint mPaint;
 
-    public DrawingBrush(Context context) {
-        paint = createBasicPaint();
-        paint.setStrokeWidth(3);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setFilterBitmap(true);
-        paint.setStrokeJoin(Paint.Join.ROUND);
-        paint.setStrokeCap(Paint.Cap.BUTT);
-        paint.setColor(Color.DKGRAY);
+    public DrawingBrush() {
+        mPaint = createBasicPaint();
+        mPaint.setStrokeWidth(2);
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setFilterBitmap(true);
+        mPaint.setStrokeJoin(Paint.Join.ROUND);
+        mPaint.setStrokeCap(Paint.Cap.BUTT);
+        mPaint.setColor(Color.DKGRAY);
 
 //        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.clean_gray_paper);
 //        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-//        paint.setShader(new LinearGradient());
+//        mPaint.setShader(new LinearGradient());
 //
-//        paint.setAlpha(200);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setMaskFilter(new BlurMaskFilter(paint.getStrokeWidth()/2, BlurMaskFilter.Blur.NORMAL));
+        mPaint.setAlpha(50);
+//        mPaint.setStyle(Paint.Style.STROKE);
+//        mPaint.setMaskFilter(new BlurMaskFilter(mPaint.getStrokeWidth() / 2, BlurMaskFilter.Blur.NORMAL));
 
         mMode = PorterDuff.Mode.SRC_OVER;
-        paint.setXfermode(new PorterDuffXfermode(mMode));
+        mPaint.setXfermode(new PorterDuffXfermode(mMode));
     }
 
     public Paint getPaint() {
-        return paint;
+        return mPaint;
     }
 
 
     public int getColor() {
-        return paint.getColor();
+        return mPaint.getColor();
     }
 
 
     public void setColor(int color) {
-        paint.setColor(color);
+        mPaint.setColor(color);
     }
 
 
     public void setStrokeWidth(int newStrokeWidth) {
-        paint.setStrokeWidth(newStrokeWidth);
+        mPaint.setStrokeWidth(newStrokeWidth);
     }
 
     public PorterDuff.Mode getMode() {
@@ -69,7 +64,15 @@ public class DrawingBrush {
 
     public void setMode(PorterDuff.Mode mode) {
         mMode = mode;
-        paint.setXfermode(new PorterDuffXfermode(mode));
+        mPaint.setXfermode(new PorterDuffXfermode(mode));
+    }
+
+    public void setAlpha(int alpha) {
+        mPaint.setAlpha(alpha);
+    }
+
+    public int getAlpha() {
+        return mPaint.getAlpha();
     }
 }
 
