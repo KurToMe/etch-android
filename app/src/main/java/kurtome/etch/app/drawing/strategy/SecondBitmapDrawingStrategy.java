@@ -9,7 +9,7 @@ import kurtome.etch.app.drawing.DrawingBrush;
  * Uses a second bitmap to blend before rendering so the blending
  * is always the same regardless of how/when the path is being drawn.
  *
- * (If you simply draw on the onDraw canvas it doesn't blend right
+ * (If you simply draw on the draw canvas it doesn't blend right
  *  with more complex PorterDuff modes, like SRC and OVERLAY)
  *
  */
@@ -35,7 +35,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
     //view assigned size
     @Override
-    public void onDraw(Canvas canvas) {
+    public void draw(Canvas canvas) {
         // let the second canvas do the blending on its bitmap
         CanvasUtils.clearCanvas(mSecondCanvas);
         mSecondCanvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
@@ -46,7 +46,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
     //respond to touch interaction
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean touchEvent(MotionEvent event) {
         float touchX = event.getX();
         float touchY = event.getY();
 

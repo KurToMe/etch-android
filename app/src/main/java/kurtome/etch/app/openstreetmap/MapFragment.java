@@ -143,9 +143,9 @@ public class MapFragment extends Fragment {
 //            }
 
 //            @Override
-//            public boolean onTouchEvent(MotionEvent event) {
+//            public boolean touchEvent(MotionEvent event) {
 //                // disable scrolling
-//                //return super.onTouchEvent(event);
+//                //return super.touchEvent(event);
 //                boolean handledEvent = true;
 //                return handledEvent;
 //            }

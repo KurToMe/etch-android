@@ -23,7 +23,7 @@ public class SimpleDrawingStrategy implements DrawingStrategy {
 
     //view assigned size
     @Override
-    public void onDraw(Canvas canvas) {
+    public void draw(Canvas canvas) {
         Paint basicPaint = DrawingBrush.BASIC_PAINT;
         canvas.drawBitmap(mCanvasBitmap, 0, 0, basicPaint);
         canvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
@@ -31,7 +31,7 @@ public class SimpleDrawingStrategy implements DrawingStrategy {
 
     //respond to touch interaction
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean touchEvent(MotionEvent event) {
         float touchX = event.getX();
         float touchY = event.getY();
 

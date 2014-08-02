@@ -10,8 +10,8 @@ import kurtome.etch.app.R;
 
 public class BrushStrokeDialog extends AlertDialog {
 
-    private static final int MIN_STROKE_WIDTH = 3;
-    private static final int MAX_STROKE_WIDTH = 50;
+    private static final int MIN_STROKE_WIDTH = 1;
+    private static final int MAX_STROKE_WIDTH = 80;
     public static final int MAX_OPACITY = 255;
 
     private DrawingBrush mDrawingBrush;

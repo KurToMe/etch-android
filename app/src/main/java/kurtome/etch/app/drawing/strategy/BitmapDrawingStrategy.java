@@ -32,14 +32,14 @@ public class BitmapDrawingStrategy implements DrawingStrategy {
 
     //view assigned size
     @Override
-    public void onDraw(Canvas canvas) {
+    public void draw(Canvas canvas) {
         canvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
         //canvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
     }
 
     //respond to touch interaction
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
+    public boolean touchEvent(MotionEvent event) {
         float touchX = event.getX();
         float touchY = event.getY();
 
@@ -60,7 +60,7 @@ public class BitmapDrawingStrategy implements DrawingStrategy {
                     // we need to do save/restore craziness to only draw each path once.
                     //
                     // The more sane (and performant) way to do this is by only drawing the part of the path
-                    // we have made so far in onDraw and drawing it permanently to canvas in MOTION_UP....
+                    // we have made so far in draw and drawing it permanently to canvas in MOTION_UP....
                     // ...BUT  this causes issues with PorterDuff.Mode.SRC which we need for erasing etc.
 
 //                    mDrawCanvas.restoreToCount(mSaveCount);
@@ -80,7 +80,7 @@ public class BitmapDrawingStrategy implements DrawingStrategy {
                     // we need to do save/restore craziness to only draw each path once.
                     //
                     // The more sane (and performant) way to do this is by only drawing the part of the path
-                    // we have made so far in onDraw and drawing it permanently to canvas in MOTION_UP....
+                    // we have made so far in draw and drawing it permanently to canvas in MOTION_UP....
                     // ...BUT  this causes issues with PorterDuff.Mode.SRC which we need for erasing etc.
 
                     mDrawCanvas.restoreToCount(mSaveCount);

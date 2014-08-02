@@ -7,10 +7,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
-import kurtome.etch.app.drawing.strategy.BitmapDrawingStrategy;
 import kurtome.etch.app.drawing.strategy.DrawingStrategy;
 import kurtome.etch.app.drawing.strategy.SecondBitmapDrawingStrategy;
-import kurtome.etch.app.drawing.strategy.SimpleDrawingStrategy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,14 +51,14 @@ public class DrawingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        mDrawingStrategy.onDraw(canvas);
+        mDrawingStrategy.draw(canvas);
     }
 
     //respond to touch interaction
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         super.onTouchEvent(event);
-        mDrawingStrategy.onTouchEvent(event);
+        mDrawingStrategy.touchEvent(event);
         invalidate();
         return true;
     }

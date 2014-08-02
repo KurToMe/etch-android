@@ -6,9 +6,9 @@ import kurtome.etch.app.drawing.DrawingBrush;
 
 public interface DrawingStrategy {
 
-    void onDraw(Canvas canvas);
+    void draw(Canvas canvas);
 
-    boolean onTouchEvent(MotionEvent event);
+    boolean touchEvent(MotionEvent event);
 
     DrawingBrush getBrush();
 
