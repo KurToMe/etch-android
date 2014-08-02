@@ -135,12 +135,12 @@ public class MapFragment extends Fragment {
 
         mResourceProxy = new ResourceProxyImpl(inflater.getContext().getApplicationContext());
         mMapView = new MapView(inflater.getContext(), 256, mResourceProxy) {
-            @Override
-            public void scrollBy(int x, int y) {
-                // disable scrolling
-                // TODO - sometimes scrolling is still possible, need to do a better job preventing that
-                //super.scrollBy(x, y);
-            }
+//            @Override
+//            public void scrollBy(int x, int y) {
+//                // disable scrolling
+//                // TODO - sometimes scrolling is still possible, need to do a better job preventing that
+//                //super.scrollBy(x, y);
+//            }
 
 //            @Override
 //            public boolean onTouchEvent(MotionEvent event) {
@@ -173,7 +173,7 @@ public class MapFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
 
         mMapView.setBuiltInZoomControls(false);
-        mMapView.setMultiTouchControls(false);
+//        mMapView.setMultiTouchControls(false);
 
         forceMaxZoom();
 
@@ -365,14 +365,17 @@ public class MapFragment extends Fragment {
         int maxOffset = -initialOffset;
         for (int longOffset = initialOffset; longOffset <= maxOffset; longOffset++) {
             for (int latOffset = initialOffset; latOffset <= maxOffset; latOffset++) {
-                GeoPoint offset = CoordinateUtils.offset(point, latOffset, longOffset);
+                // We want to start in upper-left/north-west corner, so each increment
+                // should be in terms of amount east and south
+                GeoPoint eastOffset = CoordinateUtils.incrementEast(point, longOffset);
+                GeoPoint finalOffset = CoordinateUtils.incrementSouth(eastOffset, latOffset);
 
                 // Upper left (offset -1, -1) should be 0, 0 on the grid of etches
                 int etchGridX = longOffset + -initialOffset;
                 int etchGridY = latOffset + -initialOffset;
 
-                EtchOverlayItem etchItem = getEtchOverlayItem(offset, etchGridX, etchGridY);
-                etchItem.setEtchCoordinates(CoordinateUtils.convert(offset));
+                EtchOverlayItem etchItem = getEtchOverlayItem(finalOffset, etchGridX, etchGridY);
+                etchItem.setEtchCoordinates(CoordinateUtils.convert(finalOffset));
                 items.add(etchItem);
             }
         }
@@ -399,13 +402,33 @@ public class MapFragment extends Fragment {
         }
     }
 
+    private GeoPoint coerce(IGeoPoint iGeo) {
+        if (iGeo instanceof GeoPoint) {
+            return (GeoPoint) iGeo;
+        }
+        else {
+            return new GeoPoint(iGeo.getLatitudeE6(), iGeo.getLongitudeE6());
+        }
+    }
+
+    private int calcEtchSize() {
+        Projection projection = mMapView.getProjection();
+        GeoPoint geo = coerce(projection.fromPixels(0, 0));
+        GeoPoint eastGeo = CoordinateUtils.incrementEast(geo, 1);
+        Point pointToUse = new Point(0, 0);
+        projection.toPixels(eastGeo, pointToUse);
+        return pointToUse.x;
+//        return mMapView.getWidth() / ETCH_GRID_SIZE;
+    }
+
     private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint, int etchGridX, int etchGridY) {
-        final int etchSize = mMapView.getWidth() / ETCH_GRID_SIZE;
+        final int etchSize = calcEtchSize();
 
         Point etchGridOrigin = etchGridUpperLeft();
         Point upperLeft = new Point(etchGridOrigin.x + (etchSize * etchGridX), etchGridOrigin.y + (etchSize * etchGridY));
 
-        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
+//        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
+        GeoPoint upperLeftGeo = CoordinateUtils.getNorthWestPointStillInSameMinIncrement(etchPoint);
         EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", upperLeftGeo);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.UPPER_LEFT_CORNER);
 
@@ -450,7 +473,7 @@ public class MapFragment extends Fragment {
         mMapController.setZoom(zoomLevel);
 
         // Make sure there is no way to zoom out
-        mMapView.setMinZoomLevel(zoomLevel);
+//        mMapView.setMinZoomLevel(zoomLevel);
     }
 
 
