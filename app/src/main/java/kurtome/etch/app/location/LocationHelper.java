@@ -35,10 +35,8 @@ public class LocationHelper {
 
     private final Context mContext;
     private final LocationManager mLocationManager;
-    private final long mTimeout = 0;
     private LocationResponse mCallback = null;
-    private Accuracy mAccuracy = Accuracy.FINE;
-    private final Handler mTimeoutHandler = new Handler();
+    private Handler mTimeoutHandler;
     private float mAccuracyMeters = 30.0f;
 
     private LocationListener createListener() {
@@ -47,16 +45,7 @@ public class LocationHelper {
             public void onLocationChanged(Location location) {
                 if (location != null) {
                     if (mCallback != null) {
-                        mCallback.onLocationChanged(location);
-
-                        if (mAccuracy == Accuracy.FINE && (!location.hasAccuracy() || location.getAccuracy() > mAccuracyMeters))
-                            return;
-                        if (!hasAquired) {
-                            mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
-                            mLocationManager.removeUpdates(this);
-                            mCallback.onLocationAcquired(location);
-                            hasAquired = true;
-                        }
+                        handleLocationChanged(location);
                     }
                 }
             }
@@ -77,8 +66,7 @@ public class LocationHelper {
                 }
 
                 if (!allOn) {
-                    mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
-                    mLocationManager.removeUpdates(mListener);
+                    removeListeners();
 
                     if (mCallback != null) {
                         mCallback.onLocationFailed("All providers disabled", MESSAGE_PROVIDER_DISABLED);
@@ -88,22 +76,47 @@ public class LocationHelper {
         };
     }
 
-    private final LocationListener mListener = createListener();
+    private void handleLocationChanged(Location location) {
+        if (location == null) {
+            return;
+        }
+
+        mCallback.onLocationChanged(location);
+
+        long maxAge = System.currentTimeMillis() - (30 * 1000);
+        Location vetted = vetLocation(null, maxAge, location);
+        if (!hasAcquired && vetted != null) {
+            removeListeners();
+            mCallback.onLocationAcquired(vetted);
+            hasAcquired = true;
+        }
+    }
+
+    private LocationListener mListener;
 
     private final Runnable mTimeoutRunnable = new Runnable() {
         @Override
         public void run() {
-            mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
-            mLocationManager.removeUpdates(mListener);
+            removeListeners();
 
             if (mCallback != null) {
                 mCallback.onLocationFailed("Timeout", MESSAGE_TIMEOUT);
                 mCallback.onTimeout();
             }
         }
-
-        ;
     };
+
+    private void removeListeners() {
+        if (mTimeoutHandler != null) {
+            mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
+            mTimeoutHandler = null;
+        }
+
+        if (mListener != null) {
+            mLocationManager.removeUpdates(mListener);
+            mListener = null;
+        }
+    }
 
     /**
      * Determines the accuracy of the fetch
@@ -117,7 +130,7 @@ public class LocationHelper {
         /**
          * Get the location by any means
          */
-        COARSE;
+        COARSE
     }
 
     /**
@@ -128,18 +141,6 @@ public class LocationHelper {
     public LocationHelper(Context context) {
         mContext = context;
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-    }
-
-    /**
-     * Cancels the request
-     */
-    public void cancelRequest() {
-        mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
-        mLocationManager.removeUpdates(mListener);
-
-        if (mCallback != null) {
-            mCallback.onLocationFailed("Canceled", MESSAGE_FORCED_CANCEL);
-        }
     }
 
     /**
@@ -180,15 +181,16 @@ public class LocationHelper {
      * @param callback The callback for the request
      */
     public void fetchLocation(long timeout, Accuracy accuracy, LocationResponse callback) {
+        resetEverythingThatMatters();
+
         mCallback = callback;
         mCallback.onRequest();
-        mAccuracy = accuracy;
-        Location userLocation = null;
 
         // Try to get the cache location first
-        userLocation = getCachedLocation();
-        // if (userLocation == null)
-        {
+        Location userLocation = getCachedLocation();
+        handleLocationChanged(userLocation);
+
+        if (!hasAcquired) {
             if (timeout > 0) {
                 mTimeoutHandler.postDelayed(mTimeoutRunnable, timeout);
             }
@@ -214,6 +216,15 @@ public class LocationHelper {
                 e.printStackTrace();
             }
         }
+        else {
+        }
+    }
+
+    private void resetEverythingThatMatters() {
+        hasAcquired = false;
+        removeListeners();
+        mTimeoutHandler = new Handler();
+        mListener = createListener();
     }
 
     /**
@@ -223,27 +234,47 @@ public class LocationHelper {
      */
     public Location getCachedLocation() {
         List<String> providers = mLocationManager.getProviders(true);
-        Location l = null;
+        Location bestLocation = null;
+
+        final long now = System.currentTimeMillis();
+        final long maxAgeMillis = now - (30 * 1000);
 
         for (int i = providers.size() - 1; i >= 0; i--) {
             Location loc = mLocationManager.getLastKnownLocation(providers.get(i));
-
-            if (l == null || (loc != null && loc.getAccuracy() < l.getAccuracy())) {
-                l = loc;
+            Location vetted = vetLocation(bestLocation, maxAgeMillis, loc);
+            if (vetted != null) {
+                bestLocation = vetted;
             }
         }
 
-        return l;
+        return bestLocation;
     }
 
-    private boolean hasAquired = false;
+    private Location vetLocation(Location bestLocation, long maxAgeMillis, Location loc) {
+        if (loc == null) {
+            return null;
+        }
 
+        if (loc.getTime() < maxAgeMillis) {
+            return null;
+        }
 
-    public void stopFetch() {
-        mTimeoutHandler.removeCallbacks(mTimeoutRunnable);
-        mLocationManager.removeUpdates(mListener);
+        if (loc.getAccuracy() > mAccuracyMeters) {
+            return null;
+        }
+
+        if (bestLocation == null) {
+            return loc;
+        }
+
+        if (loc.getAccuracy() < bestLocation.getAccuracy()) {
+            return loc;
+        }
+
+        return null;
     }
 
+    private boolean hasAcquired = false;
 
     /**
      * @brief The location response for the callback of the LocationHelper

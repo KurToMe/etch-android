@@ -12,6 +12,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.*;
+import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import com.google.api.client.util.Base64;
 import com.google.api.client.util.Lists;
 import com.google.common.base.Optional;
@@ -32,7 +34,9 @@ import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.location.LocationUpdatedEvent;
+import kurtome.etch.app.location.RefreshLocationRequest;
 import kurtome.etch.app.robospice.GetEtchRequest;
+import kurtome.etch.app.util.ViewUtils;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.api.IMapController;
@@ -94,11 +98,14 @@ public class MapFragment extends Fragment {
 
     private static final int MENU_LAST_ID = MENU_ABOUT + 1; // Always set to last unused id
 
+    private View mView;
     private MapView mMapView;
     private IMapController mMapController;
     private ResourceProxy mResourceProxy;
     private Location mLocation;
     private MapLocationSelectedEvent mLastSelectedEvent;
+    private RelativeLayout mLoadingLayout;
+    private ImageButton mRefreshButton;
 
     @Inject Bus mEventBus;
     @Inject SpiceManager spiceManager;
@@ -128,34 +135,48 @@ public class MapFragment extends Fragment {
         super.onStop();
     }
 
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
+
         ObjectGraphUtils.inject(this);
         mEventBus.register(this);
 
-        mResourceProxy = new ResourceProxyImpl(inflater.getContext().getApplicationContext());
-        mMapView = new MapView(inflater.getContext(), 256, mResourceProxy) {
-//            @Override
-//            public void scrollBy(int x, int y) {
-//                // disable scrolling
-//                // TODO - sometimes scrolling is still possible, need to do a better job preventing that
-//                //super.scrollBy(x, y);
-//            }
-
-//            @Override
-//            public boolean touchEvent(MotionEvent event) {
-//                // disable scrolling
-//                //return super.touchEvent(event);
-//                boolean handledEvent = true;
-//                return handledEvent;
-//            }
-        };
+        mView = inflater.inflate(R.layout.map_layout, container, false);
+        mMapView = ViewUtils.subViewById(mView, R.id.etch_map_view);
         mMapController = mMapView.getController();
+
+        mLoadingLayout = ViewUtils.subViewById(mView, R.id.loading_panel);
+
+        mRefreshButton = ViewUtils.subViewById(mView, R.id.refresh_map_btn);
+        mRefreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refreshMap();
+            }
+        });
+
 
         // Call this method to turn off hardware acceleration at the View level.
         // setHardwareAccelerationOff();
 
-        return mMapView;
+        return mView;
+    }
+
+    private void refreshMap() {
+        mLoadingLayout.setVisibility(View.VISIBLE);
+
+        mLocation = null;
+
+        mMapView.getOverlays().remove(mEtchGridOverlay);
+        mEtchGridOverlay = null;
+
+        mMapView.getOverlays().remove(mCenterOverlay);
+        mCenterOverlay = null;
+
+        mEventBus.post(new RefreshLocationRequest());
+        mMapView.invalidate();
     }
 
 
@@ -347,13 +368,20 @@ public class MapFragment extends Fragment {
             return;
         }
 
+        if (mMapView == null) {
+            return;
+        }
+
         if (mMapView.getWidth() <= 0) {
             // map isn't ready
             return;
         }
 
+
         centerOnLocation();
         placeEtchOverlays();
+
+        mLoadingLayout.setVisibility(View.INVISIBLE);
     }
 
     private void placeEtchOverlays() {
@@ -434,7 +462,7 @@ public class MapFragment extends Fragment {
 //        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
         GeoPoint upperLeftGeo = CoordinateUtils.getNorthWestPointStillInSameMinIncrement(etchPoint);
         EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", upperLeftGeo);
-        etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.UPPER_LEFT_CORNER);
+        etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.CENTER);
 
         etchItem.initializeMarker(etchSize);
 

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.location.Location;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
+import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 
 import javax.inject.Inject;
@@ -41,6 +42,11 @@ public class LocationProducer {
     @Produce
     public LocationUpdatedEvent produce() {
         return mLastEvent;
+    }
+
+    @Subscribe
+    public void refreshLocationRequested(RefreshLocationRequest requestEvent) {
+        refreshLocation();
     }
 
     public void onDestroy() {

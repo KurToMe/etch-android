@@ -1,0 +1,69 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#00CCCCCC"
+              android:orientation="vertical"
+              tools:context=".MainActivity">
+
+
+    <kurtome.etch.app.openstreetmap.EtchMapView
+            xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:tools="http://schemas.android.com/tools"
+                  android:layout_width="fill_parent"
+                  android:layout_height="fill_parent"
+                  android:id="@+id/etch_map_view"
+                  android:layout_weight="1"
+            >
+
+                  </kurtome.etch.app.openstreetmap.EtchMapView>
+
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                  xmlns:tools="http://schemas.android.com/tools"
+                  android:layout_width="fill_parent"
+                  android:layout_height="wrap_content"
+                  android:background="#FFCCCCCC"
+                  android:orientation="horizontal"
+                  tools:context=".MainActivity" android:layout_weight="1">
+
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                      xmlns:tools="http://schemas.android.com/tools"
+                      android:layout_width="fill_parent"
+                      android:layout_height="fill_parent"
+                      android:orientation="horizontal"
+                      tools:context=".MainActivity"
+                      android:gravity="right"
+                >
+
+
+        <RelativeLayout
+                android:id="@+id/loading_panel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                >
+
+            <ProgressBar
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="true" />
+
+        </RelativeLayout>
+
+        <ImageButton
+                android:id="@+id/refresh_map_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:contentDescription="refresh"
+                android:src="@android:drawable/ic_popup_sync"/>
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+
+
+</LinearLayout>
