@@ -336,8 +336,10 @@ public class MapFragment extends Fragment {
                 public void onRequestSuccess(Etch etch) {
                     if (etch.getGzipImage().length > 0) {
                         Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
-                        scaleAndSetBitmap(bitmap);
+                        if (bytes.isPresent()) {
+                            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
+                            scaleAndSetBitmap(bitmap);
+                        }
                     }
                     drawBorder(mEtchSize);
                 }

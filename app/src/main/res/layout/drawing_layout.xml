@@ -22,19 +22,25 @@
                   android:orientation="vertical"
                   tools:context=".MainActivity">
 
-        <kurtome.etch.app.drawing.DrawingView
-                android:id="@+id/drawing"
-                android:layout_width="fill_parent"
-                android:layout_height="0dp"
-                android:layout_marginBottom="3dp"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:layout_marginTop="3dp"
-                android:layout_weight="1"
-                android:alpha="1"
-                android:background="#FFFFFFFF"/>
+        <!--<ScrollView android:layout_width="fill_parent"-->
+                    <!--android:layout_height="fill_parent"-->
+                    <!--android:fillViewport="true">-->
 
-                  </kurtome.etch.app.layout.ConstrainedCanvasLayout>
+            <kurtome.etch.app.drawing.DrawingView
+                    android:id="@+id/drawing"
+                    android:layout_width="1000dp"
+                    android:layout_height="1000dp"
+                    android:layout_marginBottom="3dp"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_marginTop="3dp"
+                    android:alpha="1"
+                    android:background="#FFFFFFFF"/>
+        <!--</ScrollView>-->
+
+    </kurtome.etch.app.layout.ConstrainedCanvasLayout>
+
+
 
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"

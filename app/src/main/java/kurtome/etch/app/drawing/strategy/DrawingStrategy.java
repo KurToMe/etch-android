@@ -12,4 +12,7 @@ public interface DrawingStrategy {
 
     DrawingBrush getBrush();
 
+    boolean isDrawing();
+
+
 }

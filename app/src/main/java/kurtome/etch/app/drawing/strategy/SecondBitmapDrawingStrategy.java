@@ -4,6 +4,7 @@ import android.graphics.*;
 import android.view.MotionEvent;
 import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
+import kurtome.etch.app.drawing.ScrollInfo;
 
 /**
  * Uses a second bitmap to blend before rendering so the blending
@@ -15,33 +16,54 @@ import kurtome.etch.app.drawing.DrawingBrush;
  */
 public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
-    private Canvas mSecondCanvas;
     private Path mDrawPath;
     private Canvas mDrawCanvas;
     private Bitmap mCanvasBitmap;
+
+    private Canvas mSecondCanvas;
     private Bitmap mSecondBitmap;
+
+    private Canvas mScrollCanvas;
+    private Bitmap mScrollBitmap;
+
     private DrawingBrush mCurrentBrush;
 
     private float mLastX, mLastY;
+    private float mFirstX, mFirstY;
+    private boolean mIsDrawing;
+    private ScrollInfo mScroll = new ScrollInfo();
+
+    private final Paint etchBackgroundPaint = DrawingBrush.createBasicPaint();
+    private boolean mIgnoreMotion;
 
     public SecondBitmapDrawingStrategy(Canvas drawCanvas, Bitmap canvasBitmap) {
         this.mDrawCanvas = drawCanvas;
         this.mCanvasBitmap = canvasBitmap;
+
         this.mSecondBitmap = Bitmap.createBitmap(mCanvasBitmap);
         this.mSecondCanvas = new Canvas(mSecondBitmap);
+
+        this.mScrollBitmap = Bitmap.createBitmap(mCanvasBitmap);
+        this.mScrollCanvas = new Canvas(mScrollBitmap);
+
         mDrawPath = new Path();
         mCurrentBrush = new DrawingBrush();
+        etchBackgroundPaint.setColor(Color.WHITE);
     }
 
     //view assigned size
     @Override
     public void draw(Canvas canvas) {
         // let the second canvas do the blending on its bitmap
-        CanvasUtils.clearCanvas(mSecondCanvas);
+        mScrollCanvas.drawColor(Color.DKGRAY);
+        mSecondCanvas.drawColor(Color.WHITE);
+
         mSecondCanvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
         mSecondCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
 
-        canvas.drawBitmap(mSecondBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
+        mScrollCanvas.drawBitmap(mSecondBitmap, mScroll.x, mScroll.y, DrawingBrush.BASIC_PAINT);
+
+        canvas.drawBitmap(mScrollBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
     }
 
     //respond to touch interaction
@@ -50,21 +72,39 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         float touchX = event.getX();
         float touchY = event.getY();
 
-        // NOTE: try not o create new objects in here, this is called A LOT
+        // NOTE: try not to create new objects in here, this is called A LOT
 
         //respond to down, move and up events
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mLastX = touchX;
                 mLastY = touchY;
-                mDrawPath.moveTo(touchX, touchY);
+                mFirstX = touchX;
+                mFirstY = touchY;
+                if (mFirstX < mScroll.x || mFirstY < mScroll.y) {
+                    mIgnoreMotion = true;
+                }
+                else {
+                    mDrawPath.moveTo(touchX - mScroll.x, touchY - mScroll.y);
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
-                drawPathForMotion(event);
+                if (!mIsDrawing) {
+                    if (Math.abs(touchX - mFirstX) > 3 || Math.abs(touchY - mLastY) > 3) {
+                        mIsDrawing = true;
+                    }
+                }
+                if (mIsDrawing && !mIgnoreMotion) {
+                    drawPathForMotion(event);
+                }
                 break;
             case MotionEvent.ACTION_UP:
-                drawPathForMotion(event);
-                mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+                if (mIsDrawing && !mIgnoreMotion) {
+                    drawPathForMotion(event);
+                    mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+                }
+                mIsDrawing = false;
+                mIgnoreMotion = false;
                 mDrawPath.reset();
                 break;
             default:
@@ -83,11 +123,11 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
     private void quadThroughMotionCoords(MotionEvent event) {
         int historySize = event.getHistorySize();
-        float historicalLastX = mLastX;
-        float historicalLastY = mLastY;
+        float historicalLastX = mLastX - mScroll.x;
+        float historicalLastY = mLastY - mScroll.y;
         for (int historyPos = 0; historyPos < historySize; historyPos++) {
-            float x = event.getHistoricalX(historyPos);
-            float y = event.getHistoricalY(historyPos);
+            float x = event.getHistoricalX(historyPos) - mScroll.x;
+            float y = event.getHistoricalY(historyPos) - mScroll.y;
             quadPathTo(historicalLastX, historicalLastY, x, y);
             historicalLastX = x;
             historicalLastY = y;
@@ -98,6 +138,15 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         final float x2 = (touchX + lastX) / 2;
         final float y2 = (touchY + lastY) / 2;
         mDrawPath.quadTo(x2, y2, touchX, touchY);
+    }
+
+    public void setScrollInfo(ScrollInfo scrollInfo) {
+        this.mScroll = scrollInfo;
+    }
+
+    @Override
+    public boolean isDrawing() {
+        return mIsDrawing;
     }
 
     @Override

@@ -7,7 +7,6 @@ import kurtome.etch.app.drawing.DrawingView;
 
 public class ConstrainedCanvasLayout extends LinearLayout {
 
-
     public ConstrainedCanvasLayout(Context context) {
         super(context);
     }

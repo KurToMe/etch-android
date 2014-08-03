@@ -86,6 +86,11 @@ public class SimpleDrawingStrategy implements DrawingStrategy {
     }
 
     @Override
+    public boolean isDrawing() {
+        return false;
+    }
+
+    @Override
     public DrawingBrush getBrush() {
         return mCurrentBrush;
     }
