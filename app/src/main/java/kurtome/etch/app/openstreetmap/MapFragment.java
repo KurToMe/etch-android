@@ -458,12 +458,12 @@ public class MapFragment extends Fragment {
     private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint, int etchGridX, int etchGridY) {
         final int etchSize = calcEtchSize();
 
-        Point etchGridOrigin = etchGridUpperLeft();
-        Point upperLeft = new Point(etchGridOrigin.x + (etchSize * etchGridX), etchGridOrigin.y + (etchSize * etchGridY));
+//        Point etchGridOrigin = etchGridUpperLeft();
+//        Point upperLeft = new Point(etchGridOrigin.x + (etchSize * etchGridX), etchGridOrigin.y + (etchSize * etchGridY));
 
 //        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
-        GeoPoint upperLeftGeo = CoordinateUtils.getNorthWestPointStillInSameMinIncrement(etchPoint);
-        EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", upperLeftGeo);
+//        GeoPoint upperLeftGeo = CoordinateUtils.getNorthWestPointStillInSameMinIncrement(etchPoint);
+        EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", etchPoint);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.CENTER);
 
         etchItem.initializeMarker(etchSize);

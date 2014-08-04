@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
+import kurtome.etch.app.drawing.scroll.ScrollStrategy;
 import kurtome.etch.app.drawing.strategy.DrawingStrategy;
 import kurtome.etch.app.drawing.strategy.SecondBitmapDrawingStrategy;
 
@@ -17,13 +18,10 @@ import java.util.zip.GZIPOutputStream;
 public class DrawingView extends View {
 
     private static final Logger logger = LoggerManager.getLogger();
-    private final ScrollInfo mScrollInfo;
 
     private Canvas mDrawCanvas;
     private Bitmap mCanvasBitmap;
 
-    private int mScrollActionIndex;
-    private float mLastX, mLastY = 0;
 
     private TouchType mTouchType = TouchType.NONE;
 
@@ -34,6 +32,7 @@ public class DrawingView extends View {
     }
 
     private DrawingStrategy mDrawingStrategy;
+    private ScrollStrategy mScrollStrategy;
 
     /**
      * Some kind of crazy because too long a path causes performance issues.
@@ -50,8 +49,9 @@ public class DrawingView extends View {
         mDrawCanvas = new Canvas(mCanvasBitmap);
 
         SecondBitmapDrawingStrategy secondBitmapDrawingStrategy = new SecondBitmapDrawingStrategy(mDrawCanvas, mCanvasBitmap);
-        mScrollInfo = new ScrollInfo();
-        secondBitmapDrawingStrategy.setScrollInfo(mScrollInfo);
+        mScrollStrategy = new ScrollStrategy();
+
+        secondBitmapDrawingStrategy.setScrollInfo(mScrollStrategy.getScrollInfo());
         mDrawingStrategy = secondBitmapDrawingStrategy;
 
     }
@@ -74,14 +74,11 @@ public class DrawingView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         super.onTouchEvent(event);
 
-        if (event.getPointerCount() == 1) {
-            mScrollActionIndex = 0;
-        }
-
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             // we can safely always pass the action down to
             // the drawing because it just preps stuff
             mDrawingStrategy.touchEvent(event);
+            mScrollStrategy.touchEvent(event);
         }
 
         if (mTouchType == TouchType.NONE) {
@@ -93,66 +90,27 @@ public class DrawingView extends View {
             }
             else if (event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
                 mTouchType = TouchType.SCROLL;
-                mScrollActionIndex = event.getActionIndex();
             }
-            mLastX = event.getX(mScrollActionIndex);
-            mLastY = event.getY(mScrollActionIndex);
         }
-
 
         if (mTouchType == TouchType.DRAW) {
             mDrawingStrategy.touchEvent(event);
         }
         else if (mTouchType == TouchType.SCROLL) {
-
-            if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
-                if (mScrollActionIndex > 0) {
-                    float diffX = event.getX(mScrollActionIndex) - mLastX;
-                    float diffY = event.getY(mScrollActionIndex) - mLastY;
-                    mScrollInfo.x += diffX;
-                    mScrollInfo.y += diffY;
-                    normalizeScroll();
-                }
-            }
-            else if (event.getActionMasked() == MotionEvent.ACTION_POINTER_UP) {
-                if (event.getActionIndex() == mScrollActionIndex) {
-                    mScrollActionIndex = 0;
-                }
-            }
-            else if (event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
-                if (mScrollActionIndex == 0) {
-                    mScrollActionIndex = event.getActionIndex();
-                }
-            }
+            mScrollStrategy.touchEvent(event);
         }
 
         if (event.getActionMasked() == MotionEvent.ACTION_UP) {
             // let drawing strategy clean-up
             mDrawingStrategy.touchEvent(event);
 
-            mScrollActionIndex = 0;
+            mScrollStrategy.touchEvent(event);
+
             mTouchType = TouchType.NONE;
         }
-        mLastX = event.getX(mScrollActionIndex);
-        mLastY = event.getY(mScrollActionIndex);
 
         invalidate();
         return true;
-    }
-
-    private void normalizeScroll() {
-        mScrollInfo.x = normalizeScrollValue(mScrollInfo.x);
-        mScrollInfo.y = normalizeScrollValue(mScrollInfo.y);
-    }
-
-    private float normalizeScrollValue(float scroll) {
-        if (scroll < -IMAGE_SIZE_PIXELS) {
-            return -IMAGE_SIZE_PIXELS;
-        }
-        if (scroll > IMAGE_SIZE_PIXELS) {
-            return IMAGE_SIZE_PIXELS;
-        }
-        return scroll;
     }
 
     public DrawingBrush getDrawingBrush()  {

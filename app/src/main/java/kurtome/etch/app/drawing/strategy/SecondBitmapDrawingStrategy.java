@@ -34,7 +34,6 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     private ScrollInfo mScroll = new ScrollInfo();
 
     private final Paint etchBackgroundPaint = DrawingBrush.createBasicPaint();
-    private boolean mIgnoreMotion;
 
     public SecondBitmapDrawingStrategy(Canvas drawCanvas, Bitmap canvasBitmap) {
         this.mDrawCanvas = drawCanvas;
@@ -81,30 +80,24 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
                 mLastY = touchY;
                 mFirstX = touchX;
                 mFirstY = touchY;
-                if (mFirstX < mScroll.x || mFirstY < mScroll.y) {
-                    mIgnoreMotion = true;
-                }
-                else {
-                    mDrawPath.moveTo(touchX - mScroll.x, touchY - mScroll.y);
-                }
+                mDrawPath.moveTo(touchX - mScroll.x, touchY - mScroll.y);
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (!mIsDrawing) {
-                    if (Math.abs(touchX - mFirstX) > 3 || Math.abs(touchY - mLastY) > 3) {
+                    if (Math.abs(touchX - mFirstX) > 4 || Math.abs(touchY - mLastY) > 4) {
                         mIsDrawing = true;
                     }
                 }
-                if (mIsDrawing && !mIgnoreMotion) {
+                if (mIsDrawing) {
                     drawPathForMotion(event);
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                if (mIsDrawing && !mIgnoreMotion) {
+                if (mIsDrawing) {
                     drawPathForMotion(event);
                     mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
                 }
                 mIsDrawing = false;
-                mIgnoreMotion = false;
                 mDrawPath.reset();
                 break;
             default:
