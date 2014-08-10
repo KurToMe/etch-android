@@ -16,6 +16,12 @@ public class DrawingBrush {
         return paint;
     }
 
+    public static Paint createBasicPaintWithColor(int color) {
+        Paint paint = createBasicPaint();
+        paint.setColor(color);
+        return paint;
+    }
+
     private Paint mPaint;
 
     public DrawingBrush() {

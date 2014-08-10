@@ -32,6 +32,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     private float mFirstX, mFirstY;
     private boolean mIsDrawing;
     private ScrollInfo mScroll = new ScrollInfo();
+    private Paint whiteBackgroundPaint = DrawingBrush.createBasicPaintWithColor(Color.WHITE);
 
     private final Paint etchBackgroundPaint = DrawingBrush.createBasicPaint();
 
@@ -48,24 +49,25 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         mDrawPath = new Path();
         mCurrentBrush = new DrawingBrush();
         etchBackgroundPaint.setColor(Color.WHITE);
+
+        whiteBackgroundPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
     }
 
-    //view assigned size
     @Override
     public void draw(Canvas canvas) {
+        CanvasUtils.clearCanvas(mSecondCanvas);
         // let the second canvas do the blending on its bitmap
-        mScrollCanvas.drawColor(Color.DKGRAY);
-        mSecondCanvas.drawColor(Color.WHITE);
-
         mSecondCanvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
         mSecondCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+        // This must be last to not change how the blending of the path and current etch look
+        mSecondCanvas.drawColor(Color.WHITE, PorterDuff.Mode.DST_OVER);
 
+        mScrollCanvas.drawColor(Color.GRAY); // clear to a solid background color
         mScrollCanvas.drawBitmap(mSecondBitmap, mScroll.x, mScroll.y, DrawingBrush.BASIC_PAINT);
 
         canvas.drawBitmap(mScrollBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
     }
 
-    //respond to touch interaction
     @Override
     public boolean touchEvent(MotionEvent event) {
         float touchX = event.getX();
@@ -89,12 +91,12 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
                     }
                 }
                 if (mIsDrawing) {
-                    drawPathForMotion(event);
+                    updatePathForMotion(event);
                 }
                 break;
             case MotionEvent.ACTION_UP:
                 if (mIsDrawing) {
-                    drawPathForMotion(event);
+                    updatePathForMotion(event);
                     mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
                 }
                 mIsDrawing = false;
@@ -110,7 +112,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     }
 
 
-    private void drawPathForMotion(MotionEvent event) {
+    private void updatePathForMotion(MotionEvent event) {
         quadThroughMotionCoords(event);
     }
 

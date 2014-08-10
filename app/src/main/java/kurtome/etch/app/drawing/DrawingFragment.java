@@ -1,7 +1,5 @@
 package kurtome.etch.app.drawing;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -23,7 +21,7 @@ import kurtome.etch.app.colorpickerview.view.ColorPickerView;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
-import kurtome.etch.app.openstreetmap.MapFragment;
+import kurtome.etch.app.openstreetmap.EtchOverlayItem;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
@@ -44,7 +42,7 @@ public class DrawingFragment extends Fragment {
     private View mRootView;
     private TextView mLocationText;
     private Coordinates mCoordinates;
-    private MapFragment.EtchOverlayItem mEtchOverlayItem;
+    private EtchOverlayItem mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
 
     @Inject SpiceManager spiceManager;

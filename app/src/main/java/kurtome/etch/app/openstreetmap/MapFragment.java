@@ -2,40 +2,26 @@ package kurtome.etch.app.openstreetmap;
 
 import android.annotation.TargetApi;
 import android.app.Fragment;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.*;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.DrawableContainer;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.view.*;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
-import com.google.api.client.util.Base64;
 import com.google.api.client.util.Lists;
-import com.google.common.base.Optional;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
 import com.octo.android.robospice.SpiceManager;
-import com.octo.android.robospice.persistence.exception.SpiceException;
-import com.octo.android.robospice.request.listener.RequestListener;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
 import com.squareup.otto.Subscribe;
-import kurtome.etch.app.GzipUtils;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
 import kurtome.etch.app.domain.Coordinates;
-import kurtome.etch.app.domain.Etch;
-import kurtome.etch.app.drawing.CanvasUtils;
-import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.location.RefreshLocationRequest;
-import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.util.ViewUtils;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IGeoPoint;
@@ -44,7 +30,6 @@ import org.osmdroid.tileprovider.tilesource.ITileSource;
 import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.BoundingBoxE6;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.util.ResourceProxyImpl;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.Projection;
 import org.osmdroid.views.overlay.ItemizedIconOverlay;
@@ -80,6 +65,10 @@ public class MapFragment extends Fragment {
     };
     private ItemizedIconOverlay<OverlayItem> mCenterOverlay;
     private ItemizedIconOverlay<OverlayItem> mEtchGridOverlay;
+
+    public void onOverlayInvalidated() {
+        mMapView.invalidate();
+    }
 
     /**
      * http://www.maps.stamen.com
@@ -290,70 +279,6 @@ public class MapFragment extends Fragment {
         attemptAddOverlaysToMapBasedOnLocation();
     }
 
-    public class EtchOverlayItem extends OverlayItem {
-        private Coordinates mEtchCoordinates;
-        private Canvas mCanvas;
-        private int mEtchSize;
-
-        public EtchOverlayItem(String aTitle, String aSnippet, GeoPoint aGeoPoint) {
-            super(aTitle, aSnippet, aGeoPoint);
-        }
-
-        public Coordinates getEtchCoordinates() {
-            return mEtchCoordinates;
-        }
-
-        public void setEtchCoordinates(Coordinates etchCoordinates) {
-            mEtchCoordinates = etchCoordinates;
-        }
-
-        public void initializeMarker(int etchSize) {
-            mEtchSize = etchSize;
-            Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
-            mCanvas = new Canvas(bitmap);
-            setMarker(new BitmapDrawable(MapFragment.this.getResources(), bitmap));
-        }
-
-        private void drawBorder(int etchSize) {
-            Paint paint = new Paint();
-            paint.setStrokeWidth(2);
-            paint.setColor(Color.GRAY);
-            mCanvas.drawLine(1, 1, 1, etchSize - 1, paint); // to lower left
-            mCanvas.drawLine(1, etchSize - 1, etchSize - 1, etchSize - 1, paint); // to lower right
-            mCanvas.drawLine(etchSize - 1, etchSize - 1, etchSize - 1, 1, paint); // to upper right
-            mCanvas.drawLine(etchSize - 1, 1, 1, 1, paint); // to upper left
-        }
-
-        public void fetchEtch(final Coordinates coordinates) {
-            spiceManager.execute(new GetEtchRequest(coordinates), new RequestListener<Etch>() {
-
-                @Override
-                public void onRequestFailure(SpiceException e) {
-                    logger.e(e, "Error getting etch for location {}.", coordinates);
-                }
-
-                @Override
-                public void onRequestSuccess(Etch etch) {
-                    if (etch.getGzipImage().length > 0) {
-                        Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
-                        if (bytes.isPresent()) {
-                            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
-                            scaleAndSetBitmap(bitmap);
-                        }
-                    }
-                    drawBorder(mEtchSize);
-                }
-            });
-        }
-
-        public void scaleAndSetBitmap(Bitmap bitmap) {
-            CanvasUtils.clearCanvas(mCanvas);
-            Optional<Integer> scaleSize = Optional.of(mEtchSize);
-            CanvasUtils.drawBitmap(mCanvas, bitmap, scaleSize);
-            mMapView.invalidate();
-        }
-    }
-
     /**
      * Might only work with odd numbers right now, due to how we calculate offsets etc.
      */
@@ -463,7 +388,7 @@ public class MapFragment extends Fragment {
 
 //        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
 //        GeoPoint upperLeftGeo = CoordinateUtils.getNorthWestPointStillInSameMinIncrement(etchPoint);
-        EtchOverlayItem etchItem = new EtchOverlayItem("Etch", "Etch", etchPoint);
+        EtchOverlayItem etchItem = new EtchOverlayItem(this, "Etch", "Etch", etchPoint);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.CENTER);
 
         etchItem.initializeMarker(etchSize);
