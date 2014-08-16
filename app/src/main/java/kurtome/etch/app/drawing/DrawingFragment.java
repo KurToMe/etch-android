@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import com.octo.android.robospice.SpiceManager;
@@ -25,6 +26,7 @@ import kurtome.etch.app.openstreetmap.EtchOverlayItem;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
+import kurtome.etch.app.util.ViewUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,12 +72,12 @@ public class DrawingFragment extends Fragment {
 
         mRootView = inflater.inflate(R.layout.drawing_layout, container, false);
 
-        mDrawingView = (DrawingView) mRootView.findViewById(R.id.drawing);
+        mDrawingView = ViewUtils.subViewById(mRootView, R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
 
-        mLoadingLayout = (RelativeLayout) mRootView.findViewById(R.id.loadingPanel);
+        mLoadingLayout = ViewUtils.subViewById(mRootView, R.id.drawing_loader);
 
-        mSaveEtchButton = (ImageButton) mRootView.findViewById(R.id.save_etch_btn);
+        mSaveEtchButton = ViewUtils.subViewById(mRootView, R.id.save_etch_btn);
         mSaveEtchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -83,7 +85,7 @@ public class DrawingFragment extends Fragment {
             }
         });
 
-        mBrushStrokeButton = (ImageButton) mRootView.findViewById(R.id.brush_stroke_btn);
+        mBrushStrokeButton = ViewUtils.subViewById(mRootView, R.id.brush_stroke_btn);
         mBrushStrokeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,7 +93,7 @@ public class DrawingFragment extends Fragment {
             }
         });
 
-        mColorButton = (ImageButton) mRootView.findViewById(R.id.color_chooser_button);
+        mColorButton = ViewUtils.subViewById(mRootView, R.id.color_chooser_button);
         mColorButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -99,7 +101,7 @@ public class DrawingFragment extends Fragment {
             }
         });
 
-        mLocationText = (TextView) mRootView.findViewById(R.id.location_txt);
+        mLocationText = ViewUtils.subViewById(mRootView, R.id.location_txt);
 
         logger.debug("onCreateView {}", (spiceManager != null));
 

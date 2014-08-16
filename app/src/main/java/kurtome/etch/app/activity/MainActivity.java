@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.location.Location;
 import android.os.Bundle;
+import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
 import com.squareup.otto.Bus;
@@ -50,6 +51,8 @@ public class MainActivity extends Activity {
         }
 
         mLocationProducer.refreshLocation();
+
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
     }
 
     @Override

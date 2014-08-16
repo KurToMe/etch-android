@@ -139,7 +139,7 @@ public class MapFragment extends Fragment {
         mMapView = ViewUtils.subViewById(mView, R.id.etch_map_view);
         mMapController = mMapView.getController();
 
-        mLoadingLayout = ViewUtils.subViewById(mView, R.id.loading_panel);
+        mLoadingLayout = ViewUtils.subViewById(mView, R.id.map_loader);
 
         mRefreshButton = ViewUtils.subViewById(mView, R.id.refresh_map_btn);
         mRefreshButton.setOnClickListener(new View.OnClickListener() {
