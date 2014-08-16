@@ -22,6 +22,7 @@ import kurtome.etch.app.coordinates.CoordinateUtils;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.location.RefreshLocationRequest;
+import kurtome.etch.app.openstreetmap.preset.MapScene;
 import kurtome.etch.app.util.ViewUtils;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IGeoPoint;
@@ -43,26 +44,28 @@ public class MapFragment extends Fragment {
 
     private static final Logger logger = LoggerManager.getLogger();
 
-    public final ItemizedIconOverlay.OnItemGestureListener<OverlayItem> ON_ITEM_GESTURE_LISTENER = new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
-        @Override
-        public boolean onItemSingleTapUp(int index, OverlayItem item) {
-            if (item instanceof EtchOverlayItem) {
-                goToSelectedEtch((EtchOverlayItem) item);
-            }
-            return false;
-        }
+    public final ItemizedIconOverlay.OnItemGestureListener<OverlayItem> ON_ITEM_GESTURE_LISTENER =
+            new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
+                @Override
+                public boolean onItemSingleTapUp(int index, OverlayItem item) {
+                    if (item instanceof EtchOverlayItem) {
+                        goToSelectedEtch((EtchOverlayItem) item);
+                    }
+                    return false;
+                }
 
-        private void goToSelectedEtch(EtchOverlayItem etchItem) {
-            mLastSelectedEvent = new MapLocationSelectedEvent();
-            mLastSelectedEvent.setEtchOverlayItem(etchItem);
-            mEventBus.post(mLastSelectedEvent);
-        }
+                private void goToSelectedEtch(EtchOverlayItem etchItem) {
+                    mLastSelectedEvent = new MapLocationSelectedEvent();
+                    mLastSelectedEvent.setEtchOverlayItem(etchItem);
+                    mEventBus.post(mLastSelectedEvent);
+                }
 
-        @Override
-        public boolean onItemLongPress(int index, OverlayItem item) {
-            return false;
-        }
-    };
+                @Override
+                public boolean onItemLongPress(int index, OverlayItem item) {
+                    return false;
+                }
+            };
+
     private ItemizedIconOverlay<OverlayItem> mCenterOverlay;
     private ItemizedIconOverlay<OverlayItem> mEtchGridOverlay;
 
@@ -146,12 +149,22 @@ public class MapFragment extends Fragment {
             }
         });
 
+        final ITileSource tileSource = createOsmFr();
+        mMapView.setTileSource(tileSource);
+
+        goToScene(MapScene.NORTH_AMERICA);
 
         // Call this method to turn off hardware acceleration at the View level.
         // setHardwareAccelerationOff();
 
         return mView;
     }
+
+    public void goToScene(MapScene scene) {
+        mMapController.setCenter(scene.getCenter());
+        mMapController.setZoom(scene.getZoomLevel());
+    }
+
 
     private void refreshMap() {
         mLoadingLayout.setVisibility(View.VISIBLE);
@@ -185,7 +198,6 @@ public class MapFragment extends Fragment {
         mMapView.setBuiltInZoomControls(false);
 //        mMapView.setMultiTouchControls(false);
 
-        forceMaxZoom();
 
         setHasOptionsMenu(false);
 
@@ -234,9 +246,9 @@ public class MapFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        final ITileSource tileSource = createOsmFr();
-        mMapView.setTileSource(tileSource);
-        forceMaxZoom(); // differs by tile source
+//        final ITileSource tileSource = createOsmFr();
+//        mMapView.setTileSource(tileSource);
+// //        forceMaxZoom(); // differs by tile source
     }
 
     @Override
@@ -400,6 +412,7 @@ public class MapFragment extends Fragment {
     }
 
     private void centerOnLocation() {
+        forceMaxZoom();
         double latitude = mLocation.getLatitude();
         double longitude = mLocation.getLongitude();
         GeoPoint userCenterPoint = new GeoPoint(latitude, longitude);
