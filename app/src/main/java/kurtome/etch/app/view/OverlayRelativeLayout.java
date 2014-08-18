@@ -24,8 +24,8 @@ public class OverlayRelativeLayout extends RelativeLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (getVisibility() == VISIBLE) {
             // eat events when overlaying
+        if (getVisibility() == VISIBLE) {
             return true;
         }
         else {

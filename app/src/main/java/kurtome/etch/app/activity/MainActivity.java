@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
 
         mLocationProducer.refreshLocation();
 
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
     }
 
     @Override
@@ -83,7 +83,8 @@ public class MainActivity extends Activity {
                 .setCustomAnimations(R.animator.enter_slide_up, R.animator.exit_slide_down, R.animator.enter_slide_up, R.animator.exit_slide_down)
                 .add(R.id.container, new DrawingFragment(), DRAWING_FRAGMENT_TAG)
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
-                .commit();
+                .commit()
+        ;
     }
 
     @Subscribe

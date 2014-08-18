@@ -79,9 +79,9 @@
             android:background="#FFFFFFFF"/>
 
     <include android:id="@+id/drawing_loader"
+             android:layout_margin="4dp"
              android:layout_width="fill_parent"
              android:layout_height="fill_parent"
-             android:layout_margin="4dp"
              android:layout_below="@id/location_txt"
              android:layout_above="@id/color_chooser_button"
              layout="@layout/loader_overlay" />

@@ -11,24 +11,17 @@ import javax.inject.Inject;
 
 public class LocationProducer {
     @Inject Bus mEventBus;
+    @Inject LocationFetchManager mLocationFetchManager;
 
-    private LocationHelper mLocationHelper;
     private LocationUpdatedEvent mLastEvent;
-
-    private static final float MIN_ACCURACY_METERS = 50;
 
     public LocationProducer(Activity activity) {
         ObjectGraphUtils.inject(activity, this);
-
         mEventBus.register(this);
-
-        mLocationHelper = new LocationHelper(activity);
-        mLocationHelper.setAccuracy(MIN_ACCURACY_METERS);
     }
 
     public void refreshLocation() {
-        long timeoutMs = 3 * 60 * 1000;
-        mLocationHelper.fetchLocation(timeoutMs, LocationHelper.Accuracy.FINE, new LocationHelper.LocationResponse() {
+        FetchLocationCommand command = new FetchLocationCommand(new LocationFetchListener() {
             @Override
             public void onLocationAcquired(Location location) {
                 LocationUpdatedEvent locationUpdatedEvent = new LocationUpdatedEvent();
@@ -36,7 +29,12 @@ public class LocationProducer {
                 mLastEvent = locationUpdatedEvent;
                 mEventBus.post(locationUpdatedEvent);
             }
+
+            @Override
+            public void onLocationFailed(String message, Location bestUnacceptableLocation) {
+            }
         });
+        mLocationFetchManager.fetchLocation(command);
     }
 
     @Produce

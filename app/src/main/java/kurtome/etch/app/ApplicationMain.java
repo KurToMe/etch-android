@@ -17,7 +17,7 @@ public class ApplicationMain extends Application implements ObjectGraphUtils.Obj
     @Override
     public void onCreate() {
         // Creates the dependency injection object graph
-        mObjectGraph = ObjectGraph.create(new MainModule());
+        mObjectGraph = ObjectGraph.create(new MainModule(this));
     }
 
     /* ObjectGraphApplication Contract */
