@@ -60,6 +60,7 @@ public class DrawingView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        mDrawingStrategy.sizeChanged(w, h, oldw, oldh);
     }
 
     //draw view

@@ -145,6 +145,22 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     }
 
     @Override
+    public void sizeChanged(int width, int height, int oldWidth, int oldHeight) {
+        this.mScrollBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        this.mScrollCanvas = new Canvas(mScrollBitmap);
+
+        int extraWidth = width - mCanvasBitmap.getWidth();
+        if (extraWidth > 0) {
+            this.mScroll.x = extraWidth / 2;
+        }
+
+        int extraHeight = height - mCanvasBitmap.getHeight();
+        if (extraHeight > 0) {
+            this.mScroll.y = extraHeight / 2;
+        }
+    }
+
+    @Override
     public DrawingBrush getBrush() {
         return mCurrentBrush;
     }

@@ -91,6 +91,10 @@ public class SimpleDrawingStrategy implements DrawingStrategy {
     }
 
     @Override
+    public void sizeChanged(int width, int height, int oldWidth, int oldHeight) {
+    }
+
+    @Override
     public DrawingBrush getBrush() {
         return mCurrentBrush;
     }

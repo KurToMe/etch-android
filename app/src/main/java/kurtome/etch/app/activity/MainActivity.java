@@ -12,8 +12,8 @@ import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.drawing.DrawingFragment;
+import kurtome.etch.app.location.event.LocationFoundEvent;
 import kurtome.etch.app.location.LocationProducer;
-import kurtome.etch.app.location.LocationUpdatedEvent;
 import kurtome.etch.app.openstreetmap.MapFragment;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 
@@ -25,7 +25,6 @@ public class MainActivity extends Activity {
     private static final Logger logger = LoggerManager.getLogger();
 
     private LocationProducer mLocationProducer;
-    private Location mLocation;
 
     @Inject Bus mEventBus;
 
@@ -85,15 +84,6 @@ public class MainActivity extends Activity {
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
                 .commit()
         ;
-    }
-
-    @Subscribe
-    public void deviceLocationChanged(LocationUpdatedEvent event) {
-//        if (mLocation == null && !isFinishing()) {
-//            // first location acquired to go map
-//            getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, 0);
-//        }
-        mLocation = event.getLocation();
     }
 
     @Subscribe

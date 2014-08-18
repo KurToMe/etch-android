@@ -20,7 +20,7 @@ import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
 import kurtome.etch.app.domain.Coordinates;
-import kurtome.etch.app.location.LocationUpdatedEvent;
+import kurtome.etch.app.location.event.LocationFoundEvent;
 import kurtome.etch.app.location.RefreshLocationRequest;
 import kurtome.etch.app.openstreetmap.preset.MapScene;
 import kurtome.etch.app.util.ViewUtils;
@@ -285,10 +285,21 @@ public class MapFragment extends Fragment {
     }
 
     @Subscribe
-    public void updateLocation(final LocationUpdatedEvent event) {
-        mLocation = event.getLocation();
+    public void updateLocation(final LocationFoundEvent event) {
+        if (event.getLocation().isPresent()) {
+            mLocation = event.getLocation().get();
+            attemptAddOverlaysToMapBasedOnLocation();
+        }
+        else if (event.getRoughLocation().isPresent()) {
+            Location location = event.getRoughLocation().get();
+            GeoPoint point = new GeoPoint(location.getLatitude(), location.getLongitude());
+            mMapController.setCenter(point);
+            mMapController.setZoom(16);
+        }
 
-        attemptAddOverlaysToMapBasedOnLocation();
+        if (event.isFinal()) {
+            mLoadingLayout.setVisibility(View.INVISIBLE);
+        }
     }
 
     /**
@@ -319,8 +330,6 @@ public class MapFragment extends Fragment {
 
         centerOnLocation();
         placeEtchOverlays();
-
-        mLoadingLayout.setVisibility(View.INVISIBLE);
     }
 
     private void placeEtchOverlays() {
