@@ -75,7 +75,7 @@ public class DrawingFragment extends Fragment {
         mDrawingBrush = mDrawingView.getDrawingBrush();
 
         mLoadingLayout = ViewUtils.subViewById(mRootView, R.id.drawing_loader_overlay);
-        mLoadingAlertImage = ViewUtils.subViewById(mRootView, R.id.drawing_loader_progress);
+        mLoadingAlertImage = ViewUtils.subViewById(mRootView, R.id.drawing_loader_alert_img);
         mLoadingProgress = ViewUtils.subViewById(mRootView, R.id.drawing_loader_progress);
 
         mSaveEtchButton = ViewUtils.subViewById(mRootView, R.id.save_etch_btn);
@@ -154,12 +154,20 @@ public class DrawingFragment extends Fragment {
     }
 
     private void startLoading() {
+        mLoadingProgress.setVisibility(View.VISIBLE);
+        mLoadingAlertImage.setVisibility(View.INVISIBLE);
         showLoader();
         setSaveEnabled(false);
     }
 
     private void endLoading() {
         hideLoader();
+        setSaveEnabled(true);
+    }
+
+    private void endLoadingWithError() {
+        mLoadingProgress.setVisibility(View.INVISIBLE);
+        mLoadingAlertImage.setVisibility(View.VISIBLE);
         setSaveEnabled(true);
     }
 
@@ -183,15 +191,13 @@ public class DrawingFragment extends Fragment {
             @Override
             public void onRequestFailure(SpiceException e) {
                 logger.error("Error getting etch for location {}.", mCoordinates, e);
-                endLoading();
+                endLoadingWithError();
             }
 
             @Override
             public void onRequestSuccess(Void v) {
                 logger.debug("Saved etch {}.", saveEtchCommand);
-
                 mEtchOverlayItem.scaleAndSetBitmap(currentBitmap);
-
                 endLoading();
             }
         });
@@ -221,7 +227,7 @@ public class DrawingFragment extends Fragment {
             @Override
             public void onRequestFailure(SpiceException e) {
                 logger.error("Error getting etch for location {}.", mCoordinates, e);
-                endLoading();
+                endLoadingWithError();
             }
 
             @Override
