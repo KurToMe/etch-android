@@ -8,6 +8,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import com.google.api.client.util.Lists;
 import com.noveogroup.android.log.Logger;
@@ -97,7 +99,10 @@ public class MapFragment extends Fragment {
     private Location mLocation;
     private MapLocationSelectedEvent mLastSelectedEvent;
     private RelativeLayout mLoadingLayout;
+    private ProgressBar mLoadingProgress;
+    private ImageView mLoadingAlertImage;
     private ImageButton mRefreshButton;
+    private boolean mAccurateLocationFound;
 
     @Inject Bus mEventBus;
     @Inject SpiceManager spiceManager;
@@ -139,7 +144,10 @@ public class MapFragment extends Fragment {
         mMapView = ViewUtils.subViewById(mView, R.id.etch_map_view);
         mMapController = mMapView.getController();
 
-        mLoadingLayout = ViewUtils.subViewById(mView, R.id.map_loader);
+        mLoadingLayout = ViewUtils.subViewById(mView, R.id.map_loader_overlay);
+        mLoadingProgress = ViewUtils.subViewById(mView, R.id.map_loader_progress);
+        mLoadingAlertImage = ViewUtils.subViewById(mView, R.id.map_loader_alert_img);
+        mLoadingAlertImage.setVisibility(View.INVISIBLE);
 
         mRefreshButton = ViewUtils.subViewById(mView, R.id.refresh_map_btn);
         mRefreshButton.setOnClickListener(new View.OnClickListener() {
@@ -168,6 +176,8 @@ public class MapFragment extends Fragment {
 
     private void refreshMap() {
         mLoadingLayout.setVisibility(View.VISIBLE);
+        mLoadingProgress.setVisibility(View.VISIBLE);
+        mLoadingAlertImage.setVisibility(View.INVISIBLE);
 
         mLocation = null;
 
@@ -178,6 +188,10 @@ public class MapFragment extends Fragment {
         mCenterOverlay = null;
 
         mEventBus.post(new RefreshLocationRequest());
+
+        mLoadingProgress.setVisibility(View.VISIBLE);
+        mLoadingAlertImage.setVisibility(View.INVISIBLE);
+
         mMapView.invalidate();
     }
 
@@ -287,19 +301,30 @@ public class MapFragment extends Fragment {
     @Subscribe
     public void updateLocation(final LocationFoundEvent event) {
         if (event.getLocation().isPresent()) {
+            mAccurateLocationFound = true;
             mLocation = event.getLocation().get();
             attemptAddOverlaysToMapBasedOnLocation();
         }
-        else if (event.getRoughLocation().isPresent()) {
+        else if (event.getRoughLocation().isPresent() && !mAccurateLocationFound) {
             Location location = event.getRoughLocation().get();
             GeoPoint point = new GeoPoint(location.getLatitude(), location.getLongitude());
             mMapController.setCenter(point);
-            mMapController.setZoom(16);
+            mMapController.setZoom(14);
         }
 
         if (event.isFinal()) {
-            mLoadingLayout.setVisibility(View.INVISIBLE);
+            if (mLocation == null) {
+                handleLocationLookupFailure();
+            }
+            else {
+                mLoadingLayout.setVisibility(View.INVISIBLE);
+            }
         }
+    }
+
+    private void handleLocationLookupFailure() {
+        mLoadingProgress.setVisibility(View.INVISIBLE);
+        mLoadingAlertImage.setVisibility(View.VISIBLE);
     }
 
     /**

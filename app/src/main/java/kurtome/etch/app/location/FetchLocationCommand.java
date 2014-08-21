@@ -13,7 +13,7 @@ public class FetchLocationCommand {
      * Numbers of millis before fetch start time to use as the
      * cutoff point for acceptance
      */
-    private int mMaxAgeMillis = 2 * 60 * 1000;
+    private long mMaxAgeMillis = 2 * 60 * 1000;
 
     /**
      * How long after fetch starts to fail with timeout
@@ -44,11 +44,11 @@ public class FetchLocationCommand {
         mMinAccuracyMeters = minAccuracyMeters;
     }
 
-    public int getMaxAgeMillis() {
+    public long getMaxAgeMillis() {
         return mMaxAgeMillis;
     }
 
-    public void setMaxAgeMillis(int maxAgeMillis) {
+    public void setMaxAgeMillis(long maxAgeMillis) {
         mMaxAgeMillis = maxAgeMillis;
     }
 

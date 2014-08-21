@@ -7,8 +7,11 @@ import com.squareup.otto.Produce;
 import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.location.event.LocationFoundEvent;
+import kurtome.etch.app.util.Minutes;
+import kurtome.etch.app.util.Seconds;
 
 import javax.inject.Inject;
+import javax.xml.datatype.Duration;
 
 public class LocationProducer {
     @Inject Bus mEventBus;
@@ -41,7 +44,10 @@ public class LocationProducer {
                 mEventBus.post(event);
             }
         });
-        actualLocationCommand.setMinFetchOptimizationMillis(4 * 1000);
+        actualLocationCommand.setTimeoutMillis(Minutes.toMillis(2));
+        actualLocationCommand.setMinFetchOptimizationMillis(Seconds.toMillis(5));
+        actualLocationCommand.setMaxAgeMillis(Seconds.toMillis(5));
+        actualLocationCommand.setMinAccuracyMeters(200);
         mLocationFetchManager.fetchLocation(actualLocationCommand);
 
         FetchLocationCommand roughCommand = new FetchLocationCommand(new LocationFetchListener() {
@@ -65,8 +71,9 @@ public class LocationProducer {
                 }
             }
         });
-        roughCommand.setMaxAgeMillis(10 * 60 * 1000);
+        roughCommand.setMaxAgeMillis(Minutes.toMillis(10));
         roughCommand.setMinFetchOptimizationMillis(400);
+        roughCommand.setMinAccuracyMeters(1000);
         mLocationFetchManager.fetchLocation(roughCommand);
     }
 

@@ -6,10 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
+import android.widget.*;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
@@ -46,6 +43,8 @@ public class DrawingFragment extends Fragment {
     private Coordinates mCoordinates;
     private EtchOverlayItem mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
+    private ImageView mLoadingAlertImage;
+    private ProgressBar mLoadingProgress;
 
     @Inject SpiceManager spiceManager;
     @Inject Bus mEventBus;
@@ -75,7 +74,9 @@ public class DrawingFragment extends Fragment {
         mDrawingView = ViewUtils.subViewById(mRootView, R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
 
-        mLoadingLayout = ViewUtils.subViewById(mRootView, R.id.drawing_loader);
+        mLoadingLayout = ViewUtils.subViewById(mRootView, R.id.drawing_loader_overlay);
+        mLoadingAlertImage = ViewUtils.subViewById(mRootView, R.id.drawing_loader_progress);
+        mLoadingProgress = ViewUtils.subViewById(mRootView, R.id.drawing_loader_progress);
 
         mSaveEtchButton = ViewUtils.subViewById(mRootView, R.id.save_etch_btn);
         mSaveEtchButton.setOnClickListener(new View.OnClickListener() {
