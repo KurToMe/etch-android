@@ -3,5 +3,9 @@
 
     <string name="app_name">etch</string>
     <string name="action_settings">Settings</string>
+    <string name="action_refresh_map">Refresh</string>
+    <string name="save_etch_action">Save</string>
+    <string name="brush_options">Brush Options</string>
+    <string name="color_chooser">Color</string>
 
 </resources>

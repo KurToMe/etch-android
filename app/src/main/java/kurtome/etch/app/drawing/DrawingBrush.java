@@ -31,13 +31,12 @@ public class DrawingBrush {
         mPaint.setFilterBitmap(true);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.BUTT);
-        mPaint.setColor(Color.DKGRAY);
+        mPaint.setColor(Color.BLACK);
 
 //        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.clean_gray_paper);
 //        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
 //        mPaint.setShader(new LinearGradient());
 //
-        mPaint.setAlpha(200);
 //        mPaint.setStyle(Paint.Style.STROKE);
 //        mPaint.setMaskFilter(new BlurMaskFilter(mPaint.getStrokeWidth() / 2, BlurMaskFilter.Blur.NORMAL));
 

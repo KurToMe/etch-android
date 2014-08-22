@@ -16,116 +16,120 @@
 
 package kurtome.etch.app.colorpickerview.drawable;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.Paint;
-import android.graphics.Rect;
+import android.graphics.*;
 import android.graphics.Bitmap.Config;
 import android.graphics.drawable.Drawable;
 
 /**
  * This drawable will draw a simple white and gray chessboard pattern.
- * It's pattern you will often see as a background behind a 
+ * It's pattern you will often see as a background behind a
  * partly transparent image in many applications.
+ *
  * @author Daniel Nilsson
  */
 public class AlphaPatternDrawable extends Drawable {
-	
-	private int mRectangleSize = 10;
 
-	private Paint mPaint = new Paint();
-	private Paint mPaintWhite = new Paint();
-	private Paint mPaintGray = new Paint();
+    private final static int DEFAULT_RECTANGLE_SIZE_PX = 10;
 
-	private int numRectanglesHorizontal;
-	private int numRectanglesVertical;
+    private final int mRectangleSize;
 
-	/**
-	 * Bitmap in which the pattern will be cached. 
-	 * This is so the pattern will not have to be recreated each time draw() gets called.
-	 * Because recreating the pattern i rather expensive. I will only be recreated if the
-	 * size changes.
-	 */
-	private Bitmap		mBitmap;
-	
-	public AlphaPatternDrawable(int rectangleSize) {
-		mRectangleSize = rectangleSize;
-		mPaintWhite.setColor(0xffffffff);
-		mPaintGray.setColor(0xffcbcbcb);
-	}
+    private Paint mPaint = new Paint();
 
-	@Override
-	public void draw(Canvas canvas) {
-		canvas.drawBitmap(mBitmap, null, getBounds(), mPaint);
-	}
+    private static Paint sPaintWhite = new Paint();
+    private static Paint sPaintGray = new Paint();
 
-	@Override
-	public int getOpacity() {
-		return 0;
-	}
+    /**
+     * Bitmap in which the pattern will be cached.
+     * This is so the pattern will not have to be recreated each time draw() gets called.
+     * Because recreating the pattern i rather expensive. I will only be recreated if the
+     * size changes.
+     */
+    private Bitmap mBitmap;
 
-	@Override
-	public void setAlpha(int alpha) {
-		throw new UnsupportedOperationException("Alpha is not supported by this drawwable.");
-	}
+    static {
+        sPaintWhite.setColor(0xffffffff);
+        sPaintGray.setColor(0xffcbcbcb);
+    }
 
-	@Override
-	public void setColorFilter(ColorFilter cf) {
-		throw new UnsupportedOperationException("ColorFilter is not supported by this drawwable.");
-	}
+    public AlphaPatternDrawable(int rectangleSize) {
+        mRectangleSize = rectangleSize;
+    }
 
-	@Override
-	protected void onBoundsChange(Rect bounds) {
-		super.onBoundsChange(bounds);
+    @Override
+    public void draw(Canvas canvas) {
+        canvas.drawBitmap(mBitmap, null, getBounds(), mPaint);
+    }
 
-		int height = bounds.height();
-		int width = bounds.width();
+    @Override
+    public int getOpacity() {
+        return 0;
+    }
 
-		numRectanglesHorizontal = (int) Math.ceil((width / mRectangleSize));
-		numRectanglesVertical = (int) Math.ceil(height / mRectangleSize);
+    @Override
+    public void setAlpha(int alpha) {
+        throw new UnsupportedOperationException("Alpha is not supported by this drawwable.");
+    }
 
-		generatePatternBitmap();
+    @Override
+    public void setColorFilter(ColorFilter cf) {
+        throw new UnsupportedOperationException("ColorFilter is not supported by this drawwable.");
+    }
 
-	}
-	
-	/**
-	 * This will generate a bitmap with the pattern 
-	 * as big as the rectangle we were allow to draw on.
-	 * We do this to chache the bitmap so we don't need to
-	 * recreate it each time draw() is called since it 
-	 * takes a few milliseconds.
-	 */
-	private void generatePatternBitmap(){
-		
-		if(getBounds().width() <= 0 || getBounds().height() <= 0){
-			return;
-		}
-		
-		mBitmap = Bitmap.createBitmap(getBounds().width(), getBounds().height(), Config.ARGB_8888);			
-		Canvas canvas = new Canvas(mBitmap);
-		
-		Rect r = new Rect();
-		boolean verticalStartWhite = true;
-		for (int i = 0; i <= numRectanglesVertical; i++) {
+    @Override
+    protected void onBoundsChange(Rect bounds) {
+        super.onBoundsChange(bounds);
 
-			boolean isWhite = verticalStartWhite;
-			for (int j = 0; j <= numRectanglesHorizontal; j++) {
+        if (getBounds().width() <= 0 || getBounds().height() <= 0) {
+            return;
+        }
 
-				r.top = i * mRectangleSize;
-				r.left = j * mRectangleSize;
-				r.bottom = r.top + mRectangleSize;
-				r.right = r.left + mRectangleSize;
-				
-				canvas.drawRect(r, isWhite ? mPaintWhite : mPaintGray);
+        /**
+        * We do this to chache the bitmap so we don't need to
+        * recreate it each time draw() is called since it
+        * takes a few milliseconds.
+        */
+        mBitmap = createPatternBitmap(getBounds().width(), getBounds().height(), mRectangleSize);
+    }
 
-				isWhite = !isWhite;
-			}
+    /**
+     * This will generate a bitmap with the pattern
+     * as big as the rectangle we were allow to draw on.
+     *
+     * TODO - probably move this to another class
+     */
+    public static Bitmap createPatternBitmap(int width, int height, int rectSize) {
+        if (width <= 0 || height <= 0 || rectSize <= 0) {
+            throw new IllegalArgumentException("Invalid dimensions.");
+        }
 
-			verticalStartWhite = !verticalStartWhite;
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
 
-		}
-		
-	}
-	
+        Rect r = new Rect();
+        boolean verticalStartWhite = true;
+
+        int numRectanglesHorizontal = (int) Math.ceil((width / rectSize));
+        int numRectanglesVertical = (int) Math.ceil(height / rectSize);
+
+        for (int i = 0; i <= numRectanglesVertical; i++) {
+
+            boolean isWhite = verticalStartWhite;
+            for (int j = 0; j <= numRectanglesHorizontal; j++) {
+
+                r.top = i * rectSize;
+                r.left = j * rectSize;
+                r.bottom = r.top + rectSize;
+                r.right = r.left + rectSize;
+
+                canvas.drawRect(r, isWhite ? sPaintWhite : sPaintGray);
+
+                isWhite = !isWhite;
+            }
+
+            verticalStartWhite = !verticalStartWhite;
+
+        }
+        return bitmap;
+    }
+
 }

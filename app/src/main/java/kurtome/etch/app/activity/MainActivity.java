@@ -2,6 +2,7 @@ package kurtome.etch.app.activity;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.View;
@@ -31,6 +32,8 @@ public class MainActivity extends Activity {
     private static final String DRAWING_ADDED_BACKSTACK = "drawing-added";
     private static final String DRAWING_FRAGMENT_TAG = "drawing-fragment-tag";
 
+    private final MapFragment mMapFragment = new MapFragment();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ObjectGraphUtils.inject(this);
@@ -44,14 +47,13 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
-                    .add(R.id.container, new MapFragment())
+                    .add(R.id.container, mMapFragment)
                     .commit();
             //goToDrawingFragment();
         }
 
         mLocationProducer.refreshLocation();
 
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
     }
 
     @Override
@@ -79,16 +81,22 @@ public class MainActivity extends Activity {
         }
 
         getFragmentManager().beginTransaction()
-                .setCustomAnimations(R.animator.enter_slide_up, R.animator.exit_slide_down, R.animator.enter_slide_up, R.animator.exit_slide_down)
+                .setCustomAnimations(R.animator.enter_slide_up, R.animator.fade_out, R.animator.fade_in, R.animator.exit_slide_down)
                 .add(R.id.container, new DrawingFragment(), DRAWING_FRAGMENT_TAG)
+                .hide(mMapFragment)
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
                 .commit()
+
         ;
     }
 
     @Subscribe
     public void mapLocationSelected(MapLocationSelectedEvent event) {
         goToDrawingFragment();
+    }
+
+    public void popToMap() {
+        getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
     }
 
 

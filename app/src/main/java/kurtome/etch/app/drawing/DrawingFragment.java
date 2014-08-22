@@ -1,11 +1,10 @@
 package kurtome.etch.app.drawing;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.*;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
@@ -14,6 +13,7 @@ import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
+import kurtome.etch.app.activity.MainActivity;
 import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialog;
 import kurtome.etch.app.colorpickerview.view.ColorPickerView;
 import kurtome.etch.app.domain.Coordinates;
@@ -23,6 +23,7 @@ import kurtome.etch.app.openstreetmap.EtchOverlayItem;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
+import kurtome.etch.app.util.Obj;
 import kurtome.etch.app.util.ViewUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,19 +36,17 @@ public class DrawingFragment extends Fragment {
 
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
-    private ImageButton mColorButton;
-    private ImageButton mBrushStrokeButton;
-    private ImageButton mSaveEtchButton;
     private View mRootView;
-    private TextView mLocationText;
     private Coordinates mCoordinates;
     private EtchOverlayItem mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
     private ImageView mLoadingAlertImage;
     private ProgressBar mLoadingProgress;
+    private MainActivity mMainActivity;
 
     @Inject SpiceManager spiceManager;
     @Inject Bus mEventBus;
+    private boolean mReadyToSave;
 
     @Override
     public void onStart() {
@@ -64,8 +63,55 @@ public class DrawingFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+
+        mMainActivity = Obj.cast(activity);
+
+        int visibility = View.SYSTEM_UI_FLAG_LOW_PROFILE;
+        mMainActivity.getWindow()
+                .getDecorView()
+                .setSystemUiVisibility(visibility);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.drawing, menu);
+        menu.findItem(R.id.save_etch_action).setEnabled(mReadyToSave);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.save_etch_action) {
+            saveEtch();
+            return true;
+        }
+
+        if (item.getItemId() == R.id.color_chooser_action) {
+            showColorDialog();
+            return true;
+        }
+
+        if (item.getItemId() == R.id.brush_options_action) {
+            showBrushStrokePicker();
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         ObjectGraphUtils.inject(this);
 
@@ -77,32 +123,6 @@ public class DrawingFragment extends Fragment {
         mLoadingLayout = ViewUtils.subViewById(mRootView, R.id.drawing_loader_overlay);
         mLoadingAlertImage = ViewUtils.subViewById(mRootView, R.id.drawing_loader_alert_img);
         mLoadingProgress = ViewUtils.subViewById(mRootView, R.id.drawing_loader_progress);
-
-        mSaveEtchButton = ViewUtils.subViewById(mRootView, R.id.save_etch_btn);
-        mSaveEtchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveEtch();
-            }
-        });
-
-        mBrushStrokeButton = ViewUtils.subViewById(mRootView, R.id.brush_stroke_btn);
-        mBrushStrokeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showBrushStrokePicker();
-            }
-        });
-
-        mColorButton = ViewUtils.subViewById(mRootView, R.id.color_chooser_button);
-        mColorButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showColorDialog();
-            }
-        });
-
-        mLocationText = ViewUtils.subViewById(mRootView, R.id.location_txt);
 
         logger.debug("onCreateView {}", (spiceManager != null));
 
@@ -148,30 +168,34 @@ public class DrawingFragment extends Fragment {
         mLoadingLayout.setVisibility(View.INVISIBLE);
     }
 
-    private void setSaveEnabled(boolean enabled) {
-        mSaveEtchButton.setEnabled(enabled);
-        mSaveEtchButton.invalidate();
-    }
 
     private void startLoading() {
         mLoadingProgress.setVisibility(View.VISIBLE);
         mLoadingAlertImage.setVisibility(View.INVISIBLE);
         showLoader();
-        setSaveEnabled(false);
+        mReadyToSave = false;
+        getActivity().invalidateOptionsMenu();
     }
 
     private void endLoading() {
         hideLoader();
-        setSaveEnabled(true);
+        mReadyToSave = true;
+        getActivity().invalidateOptionsMenu();
     }
 
     private void endLoadingWithError() {
         mLoadingProgress.setVisibility(View.INVISIBLE);
         mLoadingAlertImage.setVisibility(View.VISIBLE);
-        setSaveEnabled(true);
+        mReadyToSave = true;
     }
 
     private void saveEtch() {
+        if (!mReadyToSave) {
+            return;
+        }
+
+        startLoading();
+
         if (mCoordinates == null) {
             logger.debug("Unknown location, can't set etch.");
             return;
@@ -184,7 +208,6 @@ public class DrawingFragment extends Fragment {
         saveEtchCommand.setCoordinates(mCoordinates);
         saveEtchCommand.setImageGzip(image);
 
-        startLoading();
 
         spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
 
@@ -199,9 +222,11 @@ public class DrawingFragment extends Fragment {
                 logger.debug("Saved etch {}.", saveEtchCommand);
                 mEtchOverlayItem.scaleAndSetBitmap(currentBitmap);
                 endLoading();
+                mMainActivity.popToMap();
             }
         });
     }
+
 
 
     private String format(int e6CooridnatePart) {
@@ -219,7 +244,6 @@ public class DrawingFragment extends Fragment {
         mCoordinates = event.getCoordinates();
         mEtchOverlayItem = event.getEtchOverlayItem();
         String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
-        mLocationText.setText(text);
 
         startLoading();
         spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {

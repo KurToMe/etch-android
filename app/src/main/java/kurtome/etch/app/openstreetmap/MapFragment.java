@@ -83,15 +83,6 @@ public class MapFragment extends Fragment {
         String WATERCOLOR = "watercolor";
     }
 
-    public static final String PREFS_NAME = "org.andnav.osm.prefs";
-
-    private static final int DIALOG_ABOUT_ID = 1;
-
-    private static final int MENU_SAMPLES = Menu.FIRST + 1;
-    private static final int MENU_ABOUT = MENU_SAMPLES + 1;
-
-    private static final int MENU_LAST_ID = MENU_ABOUT + 1; // Always set to last unused id
-
     private View mView;
     private MapView mMapView;
     private IMapController mMapController;
@@ -101,7 +92,6 @@ public class MapFragment extends Fragment {
     private RelativeLayout mLoadingLayout;
     private ProgressBar mLoadingProgress;
     private ImageView mLoadingAlertImage;
-    private ImageButton mRefreshButton;
     private boolean mAccurateLocationFound;
 
     @Inject Bus mEventBus;
@@ -115,6 +105,8 @@ public class MapFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -132,7 +124,6 @@ public class MapFragment extends Fragment {
         super.onStop();
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
@@ -148,14 +139,6 @@ public class MapFragment extends Fragment {
         mLoadingProgress = ViewUtils.subViewById(mView, R.id.map_loader_progress);
         mLoadingAlertImage = ViewUtils.subViewById(mView, R.id.map_loader_alert_img);
         mLoadingAlertImage.setVisibility(View.INVISIBLE);
-
-        mRefreshButton = ViewUtils.subViewById(mView, R.id.refresh_map_btn);
-        mRefreshButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                refreshMap();
-            }
-        });
 
         final ITileSource tileSource = createOsmFr();
         mMapView.setTileSource(tileSource);
@@ -203,17 +186,11 @@ public class MapFragment extends Fragment {
             mMapView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
     }
 
-
-
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
         mMapView.setBuiltInZoomControls(false);
-//        mMapView.setMultiTouchControls(false);
-
-
-        setHasOptionsMenu(false);
 
         mMapView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
@@ -259,25 +236,13 @@ public class MapFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
-//        final ITileSource tileSource = createOsmFr();
-//        mMapView.setTileSource(tileSource);
-// //        forceMaxZoom(); // differs by tile source
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        // Put overlay items first
-        mMapView.getOverlayManager().onCreateOptionsMenu(menu, MENU_LAST_ID, mMapView);
-
-        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.map, menu);
     }
 
-    @Override
-    public void onPrepareOptionsMenu(final Menu pMenu) {
-        mMapView.getOverlayManager().onPrepareOptionsMenu(pMenu, MENU_LAST_ID, mMapView);
-        super.onPrepareOptionsMenu(pMenu);
-    }
 
     @Override
     public void onDestroy() {
@@ -287,14 +252,10 @@ public class MapFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (mMapView.getOverlayManager().onOptionsItemSelected(item, MENU_LAST_ID, mMapView))
-            return true;
-
-        switch (item.getItemId()) {
-            case MENU_ABOUT:
-                getActivity().showDialog(DIALOG_ABOUT_ID);
-                return true;
+        if (item.getItemId() == R.id.refresh_map) {
+            refreshMap();
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -423,17 +384,11 @@ public class MapFragment extends Fragment {
         Point pointToUse = new Point(0, 0);
         projection.toPixels(eastGeo, pointToUse);
         return pointToUse.x;
-//        return mMapView.getWidth() / ETCH_GRID_SIZE;
     }
 
     private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint, int etchGridX, int etchGridY) {
         final int etchSize = calcEtchSize();
 
-//        Point etchGridOrigin = etchGridUpperLeft();
-//        Point upperLeft = new Point(etchGridOrigin.x + (etchSize * etchGridX), etchGridOrigin.y + (etchSize * etchGridY));
-
-//        GeoPoint upperLeftGeo = pixelPointOnMap(upperLeft);
-//        GeoPoint upperLeftGeo = CoordinateUtils.getNorthWestPointStillInSameMinIncrement(etchPoint);
         EtchOverlayItem etchItem = new EtchOverlayItem(this, "Etch", "Etch", etchPoint);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.CENTER);
 
@@ -477,9 +432,6 @@ public class MapFragment extends Fragment {
         int zoomLevel = mMapView.getMaxZoomLevel();
         // http://wiki.openstreetmap.org/wiki/Zoom_levels
         mMapController.setZoom(zoomLevel);
-
-        // Make sure there is no way to zoom out
-//        mMapView.setMinZoomLevel(zoomLevel);
     }
 
 

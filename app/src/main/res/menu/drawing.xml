@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="kurtome.etch.app.MainActivity" >
+
+    <item android:id="@+id/color_chooser_action"
+          android:title="@string/color_chooser"
+          android:icon="@drawable/color_palette"
+          android:orderInCategory="100"
+          android:showAsAction="ifRoom" />
+
+    <item android:id="@+id/brush_options_action"
+          android:title="@string/brush_options"
+          android:icon="@android:drawable/ic_menu_edit"
+          android:orderInCategory="100"
+          android:showAsAction="ifRoom" />
+
+    <item android:id="@+id/save_etch_action"
+        android:title="@string/save_etch_action"
+        android:icon="@android:drawable/ic_menu_save"
+        android:orderInCategory="100"
+        android:showAsAction="ifRoom" />
+</menu>
