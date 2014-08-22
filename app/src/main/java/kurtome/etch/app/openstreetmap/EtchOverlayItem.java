@@ -8,9 +8,11 @@ import com.noveogroup.android.log.LoggerManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
 import kurtome.etch.app.GzipUtils;
+import kurtome.etch.app.R;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.drawing.CanvasUtils;
+import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.OverlayItem;
@@ -23,9 +25,30 @@ public class EtchOverlayItem extends OverlayItem {
     private Canvas mCanvas;
     private int mEtchSize;
 
-    public EtchOverlayItem(MapFragment mapFragment, String aTitle, String aSnippet, GeoPoint aGeoPoint) {
+    private Bitmap mDownloadingBitmap;
+    private Bitmap mAlertBitmap;
+
+    private Paint overlayPaint = new Paint();
+    private final int mIconPadding;
+
+    public EtchOverlayItem(MapFragment mapFragment, String aTitle, String aSnippet, GeoPoint aGeoPoint, int etchSize) {
         super(aTitle, aSnippet, aGeoPoint);
         mMapFragment = mapFragment;
+        mEtchSize = etchSize;
+        overlayPaint.setColor(Color.BLACK);
+        overlayPaint.setAlpha(100);
+
+        Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(bitmap);
+        setMarker(new BitmapDrawable(mMapFragment.getResources(), bitmap));
+
+        mIconPadding = etchSize / 2;
+
+        Bitmap downloadingBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.downloading);
+        mDownloadingBitmap = Bitmap.createScaledBitmap(downloadingBmp, etchSize- mIconPadding, etchSize- mIconPadding, false);
+
+        Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
+        mAlertBitmap = Bitmap.createScaledBitmap(alertBmp, etchSize- mIconPadding, etchSize- mIconPadding, false);
     }
 
     public Coordinates getEtchCoordinates() {
@@ -36,26 +59,20 @@ public class EtchOverlayItem extends OverlayItem {
         mEtchCoordinates = etchCoordinates;
     }
 
-    public void initializeMarker(int etchSize) {
-        mEtchSize = etchSize;
-        Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
-        mCanvas = new Canvas(bitmap);
-        setMarker(new BitmapDrawable(mMapFragment.getResources(), bitmap));
-    }
-
-    private void drawBorder(int etchSize) {
+    private void drawBorder() {
         Paint paint = new Paint();
         paint.setStrokeWidth(2);
         paint.setColor(Color.GRAY);
-        mCanvas.drawLine(1, 1, 1, etchSize - 1, paint); // to lower left
-        mCanvas.drawLine(1, etchSize - 1, etchSize - 1, etchSize - 1, paint); // to lower right
-        mCanvas.drawLine(etchSize - 1, etchSize - 1, etchSize - 1, 1, paint); // to upper right
-        mCanvas.drawLine(etchSize - 1, 1, 1, 1, paint); // to upper left
+        mCanvas.drawLine(1, 1, 1, mEtchSize - 1, paint); // to lower left
+        mCanvas.drawLine(1, mEtchSize - 1, mEtchSize - 1, mEtchSize - 1, paint); // to lower right
+        mCanvas.drawLine(mEtchSize - 1, mEtchSize - 1, mEtchSize - 1, 1, paint); // to upper right
+        mCanvas.drawLine(mEtchSize - 1, 1, 1, 1, paint); // to upper left
     }
 
     public void fetchEtch(final Coordinates coordinates) {
-        mMapFragment.spiceManager.execute(new GetEtchRequest(coordinates), new RequestListener<Etch>() {
+        drawIconOverlay(mDownloadingBitmap);
 
+        mMapFragment.spiceManager.execute(new GetEtchRequest(coordinates), new RequestListener<Etch>() {
             @Override
             public void onRequestFailure(SpiceException e) {
                 logger.e(e, "Error getting etch for location {}.", coordinates);
@@ -67,18 +84,40 @@ public class EtchOverlayItem extends OverlayItem {
                     Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
                     if (bytes.isPresent()) {
                         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
-                        scaleAndSetBitmap(bitmap);
+                        drawBitmap(bitmap);
+                    }
+                    else {
+                        drawIconOverlay(mAlertBitmap);
                     }
                 }
-                drawBorder(mEtchSize);
+                else {
+                    drawEmptyEtch();
+                }
             }
         });
     }
 
-    public void scaleAndSetBitmap(Bitmap bitmap) {
+    private void drawIconOverlay(Bitmap iconBitmap) {
+        mCanvas.drawPaint(overlayPaint);
+        mCanvas.drawBitmap(iconBitmap, mIconPadding/2, mIconPadding/2, DrawingBrush.BASIC_PAINT);
+        // Always have a border
+        drawBorder();
+        mMapFragment.onOverlayInvalidated();
+    }
+
+
+    private void drawEmptyEtch() {
+        // No etch drawn here yet
+        CanvasUtils.clearCanvas(mCanvas);
+        drawBorder();
+        mMapFragment.onOverlayInvalidated();
+    }
+
+    public void drawBitmap(Bitmap bitmap) {
         CanvasUtils.clearCanvas(mCanvas);
         Optional<Integer> scaleSize = Optional.of(mEtchSize);
         CanvasUtils.drawBitmap(mCanvas, bitmap, scaleSize);
         mMapFragment.onOverlayInvalidated();
+        drawBorder();
     }
 }

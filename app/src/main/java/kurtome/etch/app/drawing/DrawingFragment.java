@@ -68,15 +68,13 @@ public class DrawingFragment extends Fragment {
 
         mMainActivity = Obj.cast(activity);
 
-        int visibility = View.SYSTEM_UI_FLAG_LOW_PROFILE;
-        mMainActivity.getWindow()
-                .getDecorView()
-                .setSystemUiVisibility(visibility);
+        mMainActivity.getWindow().addFlags(View.SYSTEM_UI_FLAG_LOW_PROFILE);
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
+        mMainActivity.getWindow().clearFlags(View.SYSTEM_UI_FLAG_LOW_PROFILE);
     }
 
     @Override
@@ -220,7 +218,7 @@ public class DrawingFragment extends Fragment {
             @Override
             public void onRequestSuccess(Void v) {
                 logger.debug("Saved etch {}.", saveEtchCommand);
-                mEtchOverlayItem.scaleAndSetBitmap(currentBitmap);
+                mEtchOverlayItem.drawBitmap(currentBitmap);
                 endLoading();
                 mMainActivity.popToMap();
             }

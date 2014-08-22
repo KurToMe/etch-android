@@ -336,11 +336,7 @@ public class MapFragment extends Fragment {
                 GeoPoint eastOffset = CoordinateUtils.incrementEast(point, longOffset);
                 GeoPoint finalOffset = CoordinateUtils.incrementSouth(eastOffset, latOffset);
 
-                // Upper left (offset -1, -1) should be 0, 0 on the grid of etches
-                int etchGridX = longOffset + -initialOffset;
-                int etchGridY = latOffset + -initialOffset;
-
-                EtchOverlayItem etchItem = getEtchOverlayItem(finalOffset, etchGridX, etchGridY);
+                EtchOverlayItem etchItem = getEtchOverlayItem(finalOffset);
                 etchItem.setEtchCoordinates(CoordinateUtils.convert(finalOffset));
                 items.add(etchItem);
             }
@@ -386,13 +382,11 @@ public class MapFragment extends Fragment {
         return pointToUse.x;
     }
 
-    private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint, int etchGridX, int etchGridY) {
+    private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint) {
         final int etchSize = calcEtchSize();
 
-        EtchOverlayItem etchItem = new EtchOverlayItem(this, "Etch", "Etch", etchPoint);
+        EtchOverlayItem etchItem = new EtchOverlayItem(this, "Etch", "Etch", etchPoint, etchSize);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.CENTER);
-
-        etchItem.initializeMarker(etchSize);
 
         final Coordinates coordinates = CoordinateUtils.convert(etchPoint);
         etchItem.fetchEtch(coordinates);
