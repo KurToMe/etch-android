@@ -2,79 +2,16 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#FFCCCCCC"
+              android:background="#FFFFFF"
               android:orientation="vertical"
               tools:context=".MainActivity">
-
-    <!--<TextView-->
-            <!--android:id="@+id/location_txt"-->
-            <!--android:layout_width="fill_parent"-->
-            <!--android:layout_height="wrap_content"-->
-            <!--android:layout_alignParentTop="true"-->
-            <!--android:textIsSelectable="true"-->
-            <!--/>-->
-
-    <!--<kurtome.etch.app.layout.ConstrainedCanvasLayout-->
-            <!--xmlns:android="http://schemas.android.com/apk/res/android"-->
-                  <!--xmlns:tools="http://schemas.android.com/tools"-->
-                  <!--android:layout_width="fill_parent"-->
-                  <!--android:layout_height="fill_parent"-->
-                  <!--android:background="#00CCCCCC"-->
-                  <!--android:orientation="vertical"-->
-                  <!--tools:context=".MainActivity">-->
-
-        <!--<ScrollView android:layout_width="fill_parent"-->
-                    <!--android:layout_height="fill_parent"-->
-                    <!--android:fillViewport="true">-->
-        <!--</ScrollView>-->
-
-    <!--</kurtome.etch.app.layout.ConstrainedCanvasLayout>-->
-
-
-        <!--<ImageButton-->
-                <!--android:id="@+id/color_chooser_button"-->
-                <!--android:layout_width="wrap_content"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:layout_gravity="left"-->
-                <!--android:layout_margin="8dp"-->
-                <!--android:layout_alignParentBottom="true"-->
-                <!--android:alpha="1"-->
-                <!--android:contentDescription="color chooser"-->
-                <!--android:src="@drawable/color_palette"/>-->
-
-
-    <!--<ImageButton-->
-            <!--android:id="@+id/brush_stroke_btn"-->
-            <!--android:layout_width="wrap_content"-->
-            <!--android:layout_height="wrap_content"-->
-            <!--android:layout_margin="8dp"-->
-            <!--android:layout_toRightOf="@id/color_chooser_button"-->
-            <!--android:layout_alignParentBottom="true"-->
-            <!--android:alpha="1"-->
-            <!--android:contentDescription="brush stroke picker"-->
-            <!--android:src="@android:drawable/ic_menu_edit"/>-->
-
-
-    <!--<ImageButton-->
-            <!--android:id="@+id/save_etch_btn"-->
-            <!--android:layout_width="wrap_content"-->
-            <!--android:layout_height="wrap_content"-->
-            <!--android:layout_margin="8dp"-->
-            <!--android:layout_alignParentBottom="true"-->
-            <!--android:layout_alignParentRight="true"-->
-            <!--android:alpha="1"-->
-            <!--android:contentDescription="save"-->
-            <!--android:src="@android:drawable/ic_menu_save"/>-->
-
-
 
     <kurtome.etch.app.drawing.DrawingView
             android:id="@+id/drawing"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:layout_margin="4dp"
-            android:alpha="1"
-            android:background="#FFFFFFFF"/>
+            android:alpha="1" />
 
     <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                     android:layout_width="match_parent"
@@ -92,7 +29,7 @@
                    android:layout_height="wrap_content"
                    android:src="@android:drawable/ic_dialog_alert"
                    android:layout_centerInParent="true"
-                   android:contentDescription="error occurred"
+                   android:contentDescription="@string/loading_error"
                    android:id="@+id/drawing_loader_alert_img" />
 
     </RelativeLayout>

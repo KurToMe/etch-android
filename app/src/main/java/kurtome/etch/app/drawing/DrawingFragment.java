@@ -1,5 +1,6 @@
 package kurtome.etch.app.drawing;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Bitmap;
@@ -10,7 +11,6 @@ import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
 import com.squareup.otto.Bus;
-import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
@@ -37,6 +37,7 @@ public class DrawingFragment extends Fragment {
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
     private Coordinates mCoordinates;
+    private double mEtchAspectRatio;
     private EtchOverlayItem mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
     private ImageView mLoadingAlertImage;
@@ -44,8 +45,8 @@ public class DrawingFragment extends Fragment {
     private MainActivity mMainActivity;
 
     @Inject SpiceManager spiceManager;
-    @Inject Bus mEventBus;
     private boolean mReadyToSave;
+    private ActionBar mActionBar;
 
     @Override
     public void onStart() {
@@ -67,13 +68,20 @@ public class DrawingFragment extends Fragment {
 
         mMainActivity = ObjUtils.cast(activity);
 
-        mMainActivity.getWindow().addFlags(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LOW_PROFILE
+        );
+        mActionBar = mMainActivity.getActionBar();
+        mActionBar.setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        mMainActivity.getWindow().clearFlags(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_VISIBLE
+        );
+        mActionBar.setDisplayHomeAsUpEnabled(false);
     }
 
     @Override
@@ -81,6 +89,8 @@ public class DrawingFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
+
+
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -107,6 +117,19 @@ public class DrawingFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
+    public DrawingFragment(MapLocationSelectedEvent event) {
+        if (mEtchOverlayItem != null) {
+            // Already initialized, each instance of this is only used for one etch.
+            //  User may have double clicked on map causing second event, just ignore it.
+            logger.debug("Ignoring map location selected event.");
+            return;
+        }
+
+        mCoordinates = event.getCoordinates();
+        mEtchOverlayItem = event.getEtchOverlayItem();
+        mEtchAspectRatio = event.getEtchAspectRatio();
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
@@ -123,8 +146,25 @@ public class DrawingFragment extends Fragment {
 
         logger.debug("onCreateView {}", (spiceManager != null));
 
-        // Do this last so everything is setup before handling events
-        mEventBus.register(this);
+
+        mDrawingView.setEtchAspectRatio(mEtchAspectRatio);
+        String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
+
+        startLoading();
+        spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {
+
+            @Override
+            public void onRequestFailure(SpiceException e) {
+                logger.error("Error getting etch for location {}.", mCoordinates, e);
+                endLoadingWithError();
+            }
+
+            @Override
+            public void onRequestSuccess(Etch etch) {
+                mDrawingView.setCurrentImage(etch.getGzipImage());
+                endLoading();
+            }
+        });
 
         return rootView;
     }
@@ -138,7 +178,6 @@ public class DrawingFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mEventBus.unregister(this);
     }
 
     private void showColorDialog() {
@@ -236,27 +275,4 @@ public class DrawingFragment extends Fragment {
     }
 
 
-    @Subscribe
-    public void mapLocationSelected(MapLocationSelectedEvent event) {
-        mDrawingView.setEtchAspectRatio(event.getEtchAspectRatio());
-        mCoordinates = event.getCoordinates();
-        mEtchOverlayItem = event.getEtchOverlayItem();
-        String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
-
-        startLoading();
-        spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {
-
-            @Override
-            public void onRequestFailure(SpiceException e) {
-                logger.error("Error getting etch for location {}.", mCoordinates, e);
-                endLoadingWithError();
-            }
-
-            @Override
-            public void onRequestSuccess(Etch etch) {
-                mDrawingView.setCurrentImage(etch.getGzipImage());
-                endLoading();
-            }
-        });
-    }
 }

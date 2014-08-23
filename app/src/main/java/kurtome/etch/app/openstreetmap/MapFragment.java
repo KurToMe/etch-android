@@ -1,6 +1,7 @@
 package kurtome.etch.app.openstreetmap;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.*;
 import android.location.Location;
@@ -25,6 +26,7 @@ import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.location.event.LocationFoundEvent;
 import kurtome.etch.app.location.RefreshLocationRequest;
 import kurtome.etch.app.openstreetmap.preset.MapScene;
+import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.RectangleDimensions;
 import kurtome.etch.app.util.ViewUtils;
 import org.osmdroid.ResourceProxy;
@@ -71,6 +73,7 @@ public class MapFragment extends Fragment {
 
     private ItemizedIconOverlay<OverlayItem> mCenterOverlay;
     private ItemizedIconOverlay<OverlayItem> mEtchGridOverlay;
+    private Activity mMainActivity;
 
     public void onOverlayInvalidated() {
         mMapView.invalidate();
@@ -150,6 +153,16 @@ public class MapFragment extends Fragment {
         // setHardwareAccelerationOff();
 
         return mView;
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mMainActivity = ObjUtils.cast(activity);
+        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_VISIBLE
+        );
+        mMainActivity.getActionBar().setDisplayHomeAsUpEnabled(false);
     }
 
     public void goToScene(MapScene scene) {

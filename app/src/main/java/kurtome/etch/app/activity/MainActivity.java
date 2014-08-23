@@ -1,5 +1,6 @@
 package kurtome.etch.app.activity;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -49,11 +50,23 @@ public class MainActivity extends Activity {
             getFragmentManager().beginTransaction()
                     .add(R.id.container, mMapFragment)
                     .commit();
-            //goToDrawingFragment();
         }
 
         mLocationProducer.refreshLocation();
 
+        ActionBar actionBar = getActionBar();
+        actionBar.setDisplayShowTitleEnabled(false);
+
+    }
+
+    @Override
+    public boolean onNavigateUp() {
+        if (isFragmentVisible(DRAWING_FRAGMENT_TAG)) {
+            popToMap();
+            return true;
+        }
+
+        return super.onNavigateUp();
     }
 
     @Override
@@ -75,29 +88,30 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void goToDrawingFragment() {
+    private void goToDrawingFragment(MapLocationSelectedEvent event) {
         if (isFragmentVisible(DRAWING_FRAGMENT_TAG)) {
             return;
         }
 
         getFragmentManager().beginTransaction()
                 .setCustomAnimations(R.animator.enter_slide_up, R.animator.fade_out, R.animator.fade_in, R.animator.exit_slide_down)
-                .add(R.id.container, new DrawingFragment(), DRAWING_FRAGMENT_TAG)
+                .add(R.id.container, new DrawingFragment(event), DRAWING_FRAGMENT_TAG)
                 .hide(mMapFragment)
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
                 .commit()
-
         ;
     }
 
     @Subscribe
     public void mapLocationSelected(MapLocationSelectedEvent event) {
-        goToDrawingFragment();
+        goToDrawingFragment(event);
     }
 
     public void popToMap() {
         getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
     }
+
+
 
 
 //    @Override

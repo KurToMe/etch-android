@@ -7,5 +7,6 @@
     <string name="save_etch_action">Save</string>
     <string name="brush_options">Brush Options</string>
     <string name="color_chooser">Color</string>
+    <string name="loading_error">Loading Error</string>
 
 </resources>

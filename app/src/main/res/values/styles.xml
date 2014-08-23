@@ -1,8 +1,9 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme.Holo.Light.DarkActionBar">
+    <style name="AppTheme" parent="android:Theme.Holo">
         <!-- Customize your theme here. -->
+        <!--<item name="android:homeAsUpIndicator">@android:drawable/a</item>-->
     </style>
 
     <style name="dialog_color_picker_view_portrait">
