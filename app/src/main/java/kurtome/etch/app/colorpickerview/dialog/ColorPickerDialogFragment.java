@@ -21,25 +21,18 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import com.squareup.otto.Bus;
-import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.colorpickerview.event.ColorPickedEvent;
 import kurtome.etch.app.colorpickerview.view.ColorPanelView;
 import kurtome.etch.app.colorpickerview.view.ColorPickerView;
 import kurtome.etch.app.colorpickerview.view.ColorPickerView.OnColorChangedListener;
-import kurtome.etch.app.drawing.event.EtchColorEvent;
+import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.util.ViewUtils;
 
-import javax.inject.Inject;
-
 public class ColorPickerDialogFragment extends DialogFragment {
-
-    @Inject Bus mEventBus;
 
     private ColorPickerView mColorPicker;
 
@@ -49,6 +42,7 @@ public class ColorPickerDialogFragment extends DialogFragment {
     private ImageButton mAcceptColorButton;
     private ImageButton mDeclineColorButton;
     private ColorPickedEvent mColorPickedEvent;
+    private DrawingBrush mDrawingBrush;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -67,6 +61,11 @@ public class ColorPickerDialogFragment extends DialogFragment {
 
         mOldColor = (ColorPanelView) layout.findViewById(R.id.color_panel_old);
         mNewColor = (ColorPanelView) layout.findViewById(R.id.color_panel_new);
+
+        if (mDrawingBrush != null) {
+            mOldColor.setColor(mDrawingBrush.getColor());
+            mColorPicker.setColor(mDrawingBrush.getColor(), true);
+        }
 
         mDeclineColorButton = ViewUtils.subViewById(layout, R.id.decline_color_btn);
         mDeclineColorButton.setOnClickListener(new View.OnClickListener() {
@@ -102,7 +101,6 @@ public class ColorPickerDialogFragment extends DialogFragment {
 
         getDialog().getWindow().requestFeature(STYLE_NO_TITLE);
 
-        mEventBus.register(this);
         return layout;
     }
 
@@ -111,26 +109,15 @@ public class ColorPickerDialogFragment extends DialogFragment {
     }
 
     private void acceptColor() {
-        mColorPickedEvent = new ColorPickedEvent(mNewColor.getColor());
-        mEventBus.post(mColorPickedEvent);
+        mDrawingBrush.setColor(mNewColor.getColor());
         dismiss();
     }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        mEventBus.unregister(this);
-    }
-
-    @Subscribe
-    public void preExistingColor(EtchColorEvent event) {
-        mOldColor.setColor(event.color);
-        mColorPicker.setColor(event.color, true);
-    }
-
 
     private void colorChanged(int color) {
         mNewColor.setColor(color);
     }
 
+    public void setDrawingBrush(DrawingBrush drawingBrush) {
+        mDrawingBrush = drawingBrush;
+    }
 }

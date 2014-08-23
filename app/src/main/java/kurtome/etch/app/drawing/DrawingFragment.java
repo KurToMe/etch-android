@@ -10,9 +10,6 @@ import android.widget.*;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
-import com.squareup.otto.Bus;
-import com.squareup.otto.Produce;
-import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
@@ -21,7 +18,6 @@ import kurtome.etch.app.colorpickerview.event.ColorPickedEvent;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
-import kurtome.etch.app.drawing.event.EtchColorEvent;
 import kurtome.etch.app.openstreetmap.EtchOverlayItem;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
@@ -50,7 +46,6 @@ public class DrawingFragment extends Fragment {
     private static final String COLOR_PICKER_FRAGMENT_TAG = "COLOR_PICKER_FRAGMENT_TAG";
 
     @Inject SpiceManager spiceManager;
-    @Inject Bus mEventBus;
 
     private boolean mReadyToSave;
     private ActionBar mActionBar;
@@ -174,8 +169,6 @@ public class DrawingFragment extends Fragment {
             }
         });
 
-        mEventBus.register(this);
-
         return rootView;
     }
 
@@ -188,22 +181,18 @@ public class DrawingFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mEventBus.unregister(this);
     }
 
     private void showColorDialog() {
         ColorPickerDialogFragment dialog = new ColorPickerDialogFragment();
+
+        dialog.setDrawingBrush(mDrawingBrush);
 
         dialog.show(
                 mMainActivity.getFragmentManager(),
                 COLOR_PICKER_FRAGMENT_TAG
         );
     }
-
-    private void setColor(int color) {
-        mDrawingBrush.setColor(color);
-    }
-
 
     private void showLoader() {
         mLoadingLayout.setVisibility(View.VISIBLE);
@@ -281,16 +270,5 @@ public class DrawingFragment extends Fragment {
             decimalPlace = 3;
         }
         return s.substring(0, decimalPlace) + "." + s.substring(decimalPlace);
-    }
-
-
-    @Produce
-    public EtchColorEvent produceEtchColorEvent() {
-        return new EtchColorEvent(mDrawingBrush.getColor());
-    }
-
-    @Subscribe
-    public void newColorPicker(ColorPickedEvent event) {
-        mDrawingBrush.setColor(event.color);
     }
 }
