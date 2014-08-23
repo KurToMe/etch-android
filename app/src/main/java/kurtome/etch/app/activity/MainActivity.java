@@ -93,9 +93,12 @@ public class MainActivity extends Activity {
             return;
         }
 
+        DrawingFragment fragment = new DrawingFragment();
+        fragment.setEtchData(event);
+
         getFragmentManager().beginTransaction()
                 .setCustomAnimations(R.animator.enter_slide_up, R.animator.fade_out, R.animator.fade_in, R.animator.exit_slide_down)
-                .add(R.id.container, new DrawingFragment(event), DRAWING_FRAGMENT_TAG)
+                .add(R.id.container, fragment, DRAWING_FRAGMENT_TAG)
                 .hide(mMapFragment)
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
                 .commit()

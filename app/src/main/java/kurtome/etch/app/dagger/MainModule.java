@@ -8,6 +8,7 @@ import com.squareup.otto.Bus;
 import dagger.Module;
 import dagger.Provides;
 import kurtome.etch.app.activity.MainActivity;
+import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogFragment;
 import kurtome.etch.app.drawing.DrawingFragment;
 import kurtome.etch.app.location.LocationFetchManager;
 import kurtome.etch.app.location.LocationFetchProcessor;
@@ -25,7 +26,8 @@ import javax.inject.Singleton;
                 MapFragment.class,
                 LocationProducer.class,
                 LocationFetchManager.class,
-                LocationFetcher.class
+                LocationFetcher.class,
+                ColorPickerDialogFragment.class
         }
 )
 public class MainModule {

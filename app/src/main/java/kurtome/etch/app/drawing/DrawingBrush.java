@@ -30,7 +30,7 @@ public class DrawingBrush {
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setFilterBitmap(true);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.BUTT);
+        mPaint.setStrokeCap(Paint.Cap.SQUARE);
         mPaint.setColor(Color.BLACK);
 
 //        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.clean_gray_paper);

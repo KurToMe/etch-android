@@ -11,14 +11,17 @@ import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
 import com.squareup.otto.Bus;
+import com.squareup.otto.Produce;
+import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
-import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialog;
-import kurtome.etch.app.colorpickerview.view.ColorPickerView;
+import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogFragment;
+import kurtome.etch.app.colorpickerview.event.ColorPickedEvent;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
+import kurtome.etch.app.drawing.event.EtchColorEvent;
 import kurtome.etch.app.openstreetmap.EtchOverlayItem;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
@@ -44,7 +47,11 @@ public class DrawingFragment extends Fragment {
     private ProgressBar mLoadingProgress;
     private MainActivity mMainActivity;
 
+    private static final String COLOR_PICKER_FRAGMENT_TAG = "COLOR_PICKER_FRAGMENT_TAG";
+
     @Inject SpiceManager spiceManager;
+    @Inject Bus mEventBus;
+
     private boolean mReadyToSave;
     private ActionBar mActionBar;
 
@@ -117,12 +124,9 @@ public class DrawingFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    public DrawingFragment(MapLocationSelectedEvent event) {
+    public void setEtchData(MapLocationSelectedEvent event) {
         if (mEtchOverlayItem != null) {
-            // Already initialized, each instance of this is only used for one etch.
-            //  User may have double clicked on map causing second event, just ignore it.
-            logger.debug("Ignoring map location selected event.");
-            return;
+            throw new RuntimeException("Can only set etch data once.");
         }
 
         mCoordinates = event.getCoordinates();
@@ -134,6 +138,10 @@ public class DrawingFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         ObjectGraphUtils.inject(this);
+
+        if (mEtchOverlayItem == null) {
+            throw new RuntimeException("Can't setup without etch data.");
+        }
 
         View rootView = inflater.inflate(R.layout.drawing_layout, container, false);
 
@@ -166,6 +174,8 @@ public class DrawingFragment extends Fragment {
             }
         });
 
+        mEventBus.register(this);
+
         return rootView;
     }
 
@@ -178,17 +188,16 @@ public class DrawingFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mEventBus.unregister(this);
     }
 
     private void showColorDialog() {
-        ColorPickerDialog dialog = new ColorPickerDialog(getActivity(), mDrawingBrush.getColor(), new ColorPickerView.OnColorChangedListener() {
-            @Override
-            public void onColorChanged(int newColor) {
-                setColor(newColor);
-            }
-        });
-        dialog.setAlphaSliderVisible(true);
-        dialog.show();
+        ColorPickerDialogFragment dialog = new ColorPickerDialogFragment();
+
+        dialog.show(
+                mMainActivity.getFragmentManager(),
+                COLOR_PICKER_FRAGMENT_TAG
+        );
     }
 
     private void setColor(int color) {
@@ -275,4 +284,13 @@ public class DrawingFragment extends Fragment {
     }
 
 
+    @Produce
+    public EtchColorEvent produceEtchColorEvent() {
+        return new EtchColorEvent(mDrawingBrush.getColor());
+    }
+
+    @Subscribe
+    public void newColorPicker(ColorPickedEvent event) {
+        mDrawingBrush.setColor(event.color);
+    }
 }

@@ -7,11 +7,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
+import com.squareup.otto.Bus;
+import com.squareup.otto.Produce;
+import com.squareup.otto.Subscribe;
+import kurtome.etch.app.ObjectGraphUtils;
+import kurtome.etch.app.colorpickerview.event.ColorPickedEvent;
+import kurtome.etch.app.drawing.event.EtchColorEvent;
 import kurtome.etch.app.drawing.scroll.ScrollStrategy;
 import kurtome.etch.app.drawing.strategy.DrawingStrategy;
 import kurtome.etch.app.drawing.strategy.SecondBitmapDrawingStrategy;
 import kurtome.etch.app.util.RectangleDimensions;
 
+import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
@@ -27,7 +34,6 @@ public class DrawingView extends View {
     private boolean mInitialized;
     private double mAspectRatio;
     private RectangleDimensions mEtchDimens;
-
 
     private enum TouchType {
         NONE,
@@ -168,4 +174,7 @@ public class DrawingView extends View {
             return null;
         }
     }
+
+
+
 }
