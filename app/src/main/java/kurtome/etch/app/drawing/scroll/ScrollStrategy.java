@@ -1,7 +1,6 @@
 package kurtome.etch.app.drawing.scroll;
 
 import android.view.MotionEvent;
-import kurtome.etch.app.drawing.DrawingView;
 import kurtome.etch.app.drawing.ScrollInfo;
 
 public class ScrollStrategy {
@@ -9,6 +8,18 @@ public class ScrollStrategy {
 
     private int mScrollActionIndex;
     private float mLastX, mLastY = 0;
+
+    private final int mMaxWidthOffset;
+    private final int mMaxHeightOffset;
+    private final int mMinWidthOffset;
+    private final int mMinHeightOffset;
+
+    public ScrollStrategy(int width, int height) {
+        mMaxWidthOffset = width;
+        mMaxHeightOffset = height;
+        mMinWidthOffset = -width;
+        mMinHeightOffset = -height;
+    }
 
     public ScrollInfo getScrollInfo() {
         return mScrollInfo;
@@ -54,16 +65,16 @@ public class ScrollStrategy {
     }
 
     private void normalizeScroll() {
-        mScrollInfo.x = normalizeScrollValue(mScrollInfo.x);
-        mScrollInfo.y = normalizeScrollValue(mScrollInfo.y);
+        mScrollInfo.x = normalizeValue(mScrollInfo.x, mMinWidthOffset, mMaxWidthOffset);
+        mScrollInfo.y = normalizeValue(mScrollInfo.y, mMinHeightOffset, mMaxHeightOffset);
     }
 
-    private float normalizeScrollValue(float scroll) {
-        if (scroll < -DrawingView.IMAGE_SIZE_PIXELS) {
-            return -DrawingView.IMAGE_SIZE_PIXELS;
+    private float normalizeValue(float scroll, float min, float max) {
+        if (scroll < min) {
+            return min;
         }
-        if (scroll > DrawingView.IMAGE_SIZE_PIXELS) {
-            return DrawingView.IMAGE_SIZE_PIXELS;
+        if (scroll > max) {
+            return max;
         }
         return scroll;
     }

@@ -3,6 +3,7 @@ package kurtome.etch.app.drawing;
 import android.graphics.*;
 import com.google.common.base.Optional;
 import kurtome.etch.app.GzipUtils;
+import kurtome.etch.app.util.RectangleDimensions;
 
 public class CanvasUtils {
 
@@ -27,9 +28,18 @@ public class CanvasUtils {
         }
     }
 
-    public static void drawBitmap(Canvas canvas, Bitmap bitmap, Optional<Integer> scaleSize) {
-        if (scaleSize.isPresent()) {
-            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaleSize.get(), scaleSize.get(), false);
+    /**
+     * @param desiredHeight Scales the incoing bitmap so it's height matches incoming height.
+     *                  Aspect ratio of the original bitmap is maintained
+     */
+    public static void drawBitmap(Canvas canvas, Bitmap bitmap, Optional<Integer> desiredHeight) {
+        if (desiredHeight.isPresent()) {
+            int finalHeight = desiredHeight.get();
+            int finalWidth = RectangleUtils.calcWidthMaintainingRatio(
+                    new RectangleDimensions(bitmap.getWidth(), bitmap.getHeight()),
+                    finalHeight
+            );
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
             drawBitmap(canvas, scaledBitmap);
         }
         else {

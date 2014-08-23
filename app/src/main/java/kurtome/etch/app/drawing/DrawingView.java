@@ -10,6 +10,7 @@ import com.noveogroup.android.log.LoggerManager;
 import kurtome.etch.app.drawing.scroll.ScrollStrategy;
 import kurtome.etch.app.drawing.strategy.DrawingStrategy;
 import kurtome.etch.app.drawing.strategy.SecondBitmapDrawingStrategy;
+import kurtome.etch.app.util.RectangleDimensions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,11 +20,14 @@ public class DrawingView extends View {
 
     private static final Logger logger = LoggerManager.getLogger();
 
+    private final DrawingBrush mDrawingBrush;
     private Canvas mDrawCanvas;
     private Bitmap mCanvasBitmap;
-
-
     private TouchType mTouchType = TouchType.NONE;
+    private boolean mInitialized;
+    private double mAspectRatio;
+    private RectangleDimensions mEtchDimens;
+
 
     private enum TouchType {
         NONE,
@@ -39,21 +43,36 @@ public class DrawingView extends View {
      */
     private int mLastBreakCount;
 
-    public static final int IMAGE_SIZE_PIXELS = 1000;
+    /**
+     * Using a constant height because the distance between two latitude points
+     * is roughly the same anywhere (this is not true of longitude, so we'll let the width vary)
+     */
+    public static final int IMAGE_HEIGHT_PIXELS = 1500;
 
     public DrawingView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        mCanvasBitmap = Bitmap.createBitmap(IMAGE_SIZE_PIXELS, IMAGE_SIZE_PIXELS, Bitmap.Config.ARGB_8888);
+        mDrawingBrush = new DrawingBrush();
+    }
+
+    public void setEtchAspectRatio(double etchAspectRatio) {
+        if (mInitialized) {
+            throw new IllegalStateException("Should only initialize once.");
+        }
+
+        mAspectRatio = etchAspectRatio;
+        int width = RectangleUtils.calcWidthWithAspectRatio(IMAGE_HEIGHT_PIXELS, mAspectRatio);
+        mEtchDimens = new RectangleDimensions(width, IMAGE_HEIGHT_PIXELS);
+        mCanvasBitmap = Bitmap.createBitmap(width, IMAGE_HEIGHT_PIXELS, Bitmap.Config.ARGB_8888);
 
         mDrawCanvas = new Canvas(mCanvasBitmap);
 
-        SecondBitmapDrawingStrategy secondBitmapDrawingStrategy = new SecondBitmapDrawingStrategy(mDrawCanvas, mCanvasBitmap);
-        mScrollStrategy = new ScrollStrategy();
+        SecondBitmapDrawingStrategy secondBitmapDrawingStrategy = new SecondBitmapDrawingStrategy(mDrawCanvas, mCanvasBitmap, mDrawingBrush);
+        mScrollStrategy = new ScrollStrategy(mEtchDimens.width, mEtchDimens.height);
 
         secondBitmapDrawingStrategy.setScrollInfo(mScrollStrategy.getScrollInfo());
         mDrawingStrategy = secondBitmapDrawingStrategy;
-
+        mInitialized = true;
     }
 
     //view assigned size
@@ -115,7 +134,7 @@ public class DrawingView extends View {
     }
 
     public DrawingBrush getDrawingBrush()  {
-        return mDrawingStrategy.getBrush();
+        return mDrawingBrush;
     }
 
     public void setCurrentImage(byte[] gzipImage) {

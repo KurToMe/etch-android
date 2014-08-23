@@ -25,6 +25,7 @@ import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.location.event.LocationFoundEvent;
 import kurtome.etch.app.location.RefreshLocationRequest;
 import kurtome.etch.app.openstreetmap.preset.MapScene;
+import kurtome.etch.app.util.RectangleDimensions;
 import kurtome.etch.app.util.ViewUtils;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.api.IGeoPoint;
@@ -373,17 +374,20 @@ public class MapFragment extends Fragment {
         }
     }
 
-    private int calcEtchSize() {
+    private RectangleDimensions calcEtchSize() {
         Projection projection = mMapView.getProjection();
         GeoPoint geo = coerce(projection.fromPixels(0, 0));
         GeoPoint eastGeo = CoordinateUtils.incrementEast(geo, 1);
-        Point pointToUse = new Point(0, 0);
-        projection.toPixels(eastGeo, pointToUse);
-        return pointToUse.x;
+        GeoPoint southGeo = CoordinateUtils.incrementSouth(geo, 1);
+        Point eastPoint = new Point(0, 0);
+        projection.toPixels(eastGeo, eastPoint);
+        Point southPoint = new Point(0, 0);
+        projection.toPixels(southGeo, southPoint);
+        return new RectangleDimensions(Math.abs(eastPoint.x), Math.abs(southPoint.y));
     }
 
     private EtchOverlayItem getEtchOverlayItem(GeoPoint etchPoint) {
-        final int etchSize = calcEtchSize();
+        final RectangleDimensions etchSize = calcEtchSize();
 
         EtchOverlayItem etchItem = new EtchOverlayItem(this, "Etch", "Etch", etchPoint, etchSize);
         etchItem.setMarkerHotspot(OverlayItem.HotspotPlace.CENTER);
@@ -423,6 +427,10 @@ public class MapFragment extends Fragment {
     }
 
     private void forceMaxZoom() {
+        // Not sure if varying zoom levels will mess up the aspect ratios of the etch images.
+        //  (because we're using the map projection to calculate the width ratio)
+        // For now we'll just assume setting max zoom we'll keep things simple
+
         int zoomLevel = mMapView.getMaxZoomLevel();
         // http://wiki.openstreetmap.org/wiki/Zoom_levels
         mMapController.setZoom(zoomLevel);

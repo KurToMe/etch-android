@@ -23,7 +23,7 @@ import kurtome.etch.app.openstreetmap.EtchOverlayItem;
 import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
-import kurtome.etch.app.util.Obj;
+import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.ViewUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,6 @@ public class DrawingFragment extends Fragment {
 
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
-    private View mRootView;
     private Coordinates mCoordinates;
     private EtchOverlayItem mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
@@ -66,7 +65,7 @@ public class DrawingFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
 
-        mMainActivity = Obj.cast(activity);
+        mMainActivity = ObjUtils.cast(activity);
 
         mMainActivity.getWindow().addFlags(View.SYSTEM_UI_FLAG_LOW_PROFILE);
     }
@@ -113,21 +112,21 @@ public class DrawingFragment extends Fragment {
         super.onCreateView(inflater, container, savedInstanceState);
         ObjectGraphUtils.inject(this);
 
-        mRootView = inflater.inflate(R.layout.drawing_layout, container, false);
+        View rootView = inflater.inflate(R.layout.drawing_layout, container, false);
 
-        mDrawingView = ViewUtils.subViewById(mRootView, R.id.drawing);
+        mDrawingView = ViewUtils.subViewById(rootView, R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
 
-        mLoadingLayout = ViewUtils.subViewById(mRootView, R.id.drawing_loader_overlay);
-        mLoadingAlertImage = ViewUtils.subViewById(mRootView, R.id.drawing_loader_alert_img);
-        mLoadingProgress = ViewUtils.subViewById(mRootView, R.id.drawing_loader_progress);
+        mLoadingLayout = ViewUtils.subViewById(rootView, R.id.drawing_loader_overlay);
+        mLoadingAlertImage = ViewUtils.subViewById(rootView, R.id.drawing_loader_alert_img);
+        mLoadingProgress = ViewUtils.subViewById(rootView, R.id.drawing_loader_progress);
 
         logger.debug("onCreateView {}", (spiceManager != null));
 
         // Do this last so everything is setup before handling events
         mEventBus.register(this);
 
-        return mRootView;
+        return rootView;
     }
 
     private void showBrushStrokePicker() {
@@ -239,6 +238,7 @@ public class DrawingFragment extends Fragment {
 
     @Subscribe
     public void mapLocationSelected(MapLocationSelectedEvent event) {
+        mDrawingView.setEtchAspectRatio(event.getEtchAspectRatio());
         mCoordinates = event.getCoordinates();
         mEtchOverlayItem = event.getEtchOverlayItem();
         String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));

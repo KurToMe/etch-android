@@ -14,6 +14,7 @@ import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.robospice.GetEtchRequest;
+import kurtome.etch.app.util.RectangleDimensions;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.OverlayItem;
 
@@ -23,32 +24,37 @@ public class EtchOverlayItem extends OverlayItem {
     private MapFragment mMapFragment;
     private Coordinates mEtchCoordinates;
     private Canvas mCanvas;
-    private int mEtchSize;
+    private RectangleDimensions mEtchSize;
 
     private Bitmap mDownloadingBitmap;
     private Bitmap mAlertBitmap;
 
     private Paint overlayPaint = new Paint();
-    private final int mIconPadding;
+    private final int mStatusIconSize;
+    private final Point mStatusIconOffset;
 
-    public EtchOverlayItem(MapFragment mapFragment, String aTitle, String aSnippet, GeoPoint aGeoPoint, int etchSize) {
+    public EtchOverlayItem(MapFragment mapFragment, String aTitle, String aSnippet, GeoPoint aGeoPoint, RectangleDimensions etchSize) {
         super(aTitle, aSnippet, aGeoPoint);
         mMapFragment = mapFragment;
         mEtchSize = etchSize;
         overlayPaint.setColor(Color.BLACK);
         overlayPaint.setAlpha(100);
 
-        Bitmap bitmap = Bitmap.createBitmap(etchSize, etchSize, Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(etchSize.width, etchSize.height, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(bitmap);
         setMarker(new BitmapDrawable(mMapFragment.getResources(), bitmap));
 
-        mIconPadding = etchSize / 2;
+        mStatusIconSize = etchSize.width / 3;
 
         Bitmap downloadingBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.downloading);
-        mDownloadingBitmap = Bitmap.createScaledBitmap(downloadingBmp, etchSize- mIconPadding, etchSize- mIconPadding, false);
+        mStatusIconOffset = new Point(
+                (etchSize.width - mStatusIconSize) / 2,
+                (etchSize.height - mStatusIconSize) / 2
+        );
+        mDownloadingBitmap = Bitmap.createScaledBitmap(downloadingBmp, mStatusIconSize, mStatusIconSize, false);
 
         Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
-        mAlertBitmap = Bitmap.createScaledBitmap(alertBmp, etchSize- mIconPadding, etchSize- mIconPadding, false);
+        mAlertBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
     }
 
     public Coordinates getEtchCoordinates() {
@@ -63,10 +69,10 @@ public class EtchOverlayItem extends OverlayItem {
         Paint paint = new Paint();
         paint.setStrokeWidth(2);
         paint.setColor(Color.GRAY);
-        mCanvas.drawLine(1, 1, 1, mEtchSize - 1, paint); // to lower left
-        mCanvas.drawLine(1, mEtchSize - 1, mEtchSize - 1, mEtchSize - 1, paint); // to lower right
-        mCanvas.drawLine(mEtchSize - 1, mEtchSize - 1, mEtchSize - 1, 1, paint); // to upper right
-        mCanvas.drawLine(mEtchSize - 1, 1, 1, 1, paint); // to upper left
+        mCanvas.drawLine(1, 1, 1, mEtchSize.height - 1, paint); // to lower left
+        mCanvas.drawLine(1, mEtchSize.height - 1, mEtchSize.width - 1, mEtchSize.height - 1, paint); // to lower right
+        mCanvas.drawLine(mEtchSize.width - 1, mEtchSize.height - 1, mEtchSize.width - 1, 1, paint); // to upper right
+        mCanvas.drawLine(mEtchSize.width - 1, 1, 1, 1, paint); // to upper left
     }
 
     public void fetchEtch(final Coordinates coordinates) {
@@ -99,15 +105,12 @@ public class EtchOverlayItem extends OverlayItem {
 
     private void drawIconOverlay(Bitmap iconBitmap) {
         mCanvas.drawPaint(overlayPaint);
-        mCanvas.drawBitmap(iconBitmap, mIconPadding/2, mIconPadding/2, DrawingBrush.BASIC_PAINT);
-        // Always have a border
+        mCanvas.drawBitmap(iconBitmap, mStatusIconOffset.x, mStatusIconOffset.y, DrawingBrush.BASIC_PAINT);
         drawBorder();
         mMapFragment.onOverlayInvalidated();
     }
 
-
     private void drawEmptyEtch() {
-        // No etch drawn here yet
         CanvasUtils.clearCanvas(mCanvas);
         drawBorder();
         mMapFragment.onOverlayInvalidated();
@@ -115,9 +118,18 @@ public class EtchOverlayItem extends OverlayItem {
 
     public void drawBitmap(Bitmap bitmap) {
         CanvasUtils.clearCanvas(mCanvas);
-        Optional<Integer> scaleSize = Optional.of(mEtchSize);
-        CanvasUtils.drawBitmap(mCanvas, bitmap, scaleSize);
+
+        // if for some reason the incoming bitmap is wider than it should be,
+        // the extra width will get chopped off
+        // (we're being ok with that for now (since we're driving everything off the height))
+        Optional<Integer> desiredHeight = Optional.of(mEtchSize.height);
+        CanvasUtils.drawBitmap(mCanvas, bitmap, desiredHeight);
+
         mMapFragment.onOverlayInvalidated();
         drawBorder();
+    }
+
+    public RectangleDimensions getEtchSize() {
+        return mEtchSize;
     }
 }

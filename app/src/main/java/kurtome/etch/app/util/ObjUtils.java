@@ -1,12 +1,11 @@
 package kurtome.etch.app.util;
 
-public class Obj {
-    private Obj() {
-        // none of these
+public class ObjUtils {
+    private ObjUtils() {
+        // none of this
     }
 
     public static <T> T cast(Object obj) {
         return (T) obj;
     }
-
 }

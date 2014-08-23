@@ -37,7 +37,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     private final Bitmap mAlphaPatternBitmap;
     private final Paint mBackgroundPaint = DrawingBrush.createBasicPaint();
 
-    public SecondBitmapDrawingStrategy(Canvas drawCanvas, Bitmap canvasBitmap) {
+    public SecondBitmapDrawingStrategy(Canvas drawCanvas, Bitmap canvasBitmap, DrawingBrush drawingBrush) {
         this.mDrawCanvas = drawCanvas;
         this.mCanvasBitmap = canvasBitmap;
 
@@ -48,7 +48,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         this.mScrollCanvas = new Canvas(mScrollBitmap);
 
         mDrawPath = new Path();
-        mCurrentBrush = new DrawingBrush();
+        mCurrentBrush = drawingBrush;
         mBackgroundPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
 
         int alphaRectSizePx = 20;
