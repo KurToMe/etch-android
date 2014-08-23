@@ -13,6 +13,7 @@ import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
+import kurtome.etch.app.drawing.DrawingView;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.util.RectangleDimensions;
 import org.osmdroid.util.GeoPoint;
@@ -119,10 +120,16 @@ public class EtchOverlayItem extends OverlayItem {
     public void drawBitmap(Bitmap bitmap) {
         CanvasUtils.clearCanvas(mCanvas);
 
+        // The image will be opened in a canvas of height DrawingView.IMAGE_HEIGHT_PIXELS,
+        // so make sure to correctly show how much of that height it takes up.
+        // (this could differ if the etch was saved when the height constant was different)
+        double heightPercentage = Double.valueOf(bitmap.getHeight()) / DrawingView.IMAGE_HEIGHT_PIXELS;
+        int finalHeight = (int) Math.round(mEtchSize.height * heightPercentage);
+
         // if for some reason the incoming bitmap is wider than it should be,
         // the extra width will get chopped off
         // (we're being ok with that for now (since we're driving everything off the height))
-        Optional<Integer> desiredHeight = Optional.of(mEtchSize.height);
+        Optional<Integer> desiredHeight = Optional.of(finalHeight);
         CanvasUtils.drawBitmap(mCanvas, bitmap, desiredHeight);
 
         mMapFragment.onOverlayInvalidated();
