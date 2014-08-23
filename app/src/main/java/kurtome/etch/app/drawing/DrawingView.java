@@ -112,8 +112,7 @@ public class DrawingView extends View {
                 mTouchType = TouchType.SCROLL;
             }
         }
-
-        if (mTouchType == TouchType.DRAW) {
+        else if (mTouchType == TouchType.DRAW) {
             mDrawingStrategy.touchEvent(event);
         }
         else if (mTouchType == TouchType.SCROLL) {
