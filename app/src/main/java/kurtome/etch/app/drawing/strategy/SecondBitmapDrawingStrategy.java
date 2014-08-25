@@ -2,10 +2,17 @@ package kurtome.etch.app.drawing.strategy;
 
 import android.graphics.*;
 import android.view.MotionEvent;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import kurtome.etch.app.colorpickerview.drawable.AlphaPatternDrawable;
 import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.drawing.ScrollInfo;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 
 /**
  * Uses a second bitmap to blend before rendering so the blending
@@ -34,6 +41,20 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     private boolean mIsDrawing;
     private ScrollInfo mScroll = new ScrollInfo();
 
+    private static class PaintPath {
+        public final Paint paint;
+        public final Path path;
+
+        private PaintPath(DrawingBrush brush, Path path) {
+            this.paint = new Paint(brush.getPaint());
+            this.path = path;
+        }
+    }
+
+    private static final int MAX_PATH_UNDO_SIZE = 5;
+
+    private List<PaintPath> mDrawnPathsQueue = Lists.newLinkedList();
+
     private final Bitmap mAlphaPatternBitmap;
     private final Paint mBackgroundPaint = DrawingBrush.createBasicPaint();
 
@@ -46,8 +67,8 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
         this.mScrollBitmap = Bitmap.createBitmap(mCanvasBitmap);
         this.mScrollCanvas = new Canvas(mScrollBitmap);
+        this.mDrawPath = new Path();
 
-        mDrawPath = new Path();
         mCurrentBrush = drawingBrush;
         mBackgroundPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
 
@@ -60,7 +81,13 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         CanvasUtils.clearCanvas(mSecondCanvas);
         // let the second canvas do the blending on its bitmap
         mSecondCanvas.drawBitmap(mCanvasBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
-        mSecondCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+
+        for (PaintPath paintPath : mDrawnPathsQueue) {
+            mSecondCanvas.drawPath(paintPath.path, paintPath.paint);
+        }
+        if (mDrawPath != null) {
+            mSecondCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+        }
         // This must be last to not change how the blending of the path and current etch look
         mSecondCanvas.drawBitmap(mAlphaPatternBitmap, 0, 0, mBackgroundPaint);
 
@@ -89,6 +116,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
             case MotionEvent.ACTION_MOVE:
                 if (!mIsDrawing) {
                     if (Math.abs(touchX - mFirstX) > 4 || Math.abs(touchY - mLastY) > 4) {
+                        // Store restore state just before beginning new path
                         mIsDrawing = true;
                     }
                 }
@@ -99,10 +127,15 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
             case MotionEvent.ACTION_UP:
                 if (mIsDrawing) {
                     updatePathForMotion(event);
-                    mDrawCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
+                    mDrawnPathsQueue.add(new PaintPath(mCurrentBrush, mDrawPath));
+                    if (mDrawnPathsQueue.size() > MAX_PATH_UNDO_SIZE) {
+                        PaintPath oldestPath = Iterables.getFirst(mDrawnPathsQueue, null);
+                        mDrawCanvas.drawPath(oldestPath.path, oldestPath.paint);
+                        mDrawnPathsQueue.remove(oldestPath);
+                    }
                 }
                 mIsDrawing = false;
-                mDrawPath.reset();
+                mDrawPath = new Path();
                 break;
             default:
                 return false;
@@ -165,5 +198,21 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     @Override
     public DrawingBrush getBrush() {
         return mCurrentBrush;
+    }
+
+    @Override
+    public void undoLastDraw() {
+        int savedPathsSize = mDrawnPathsQueue.size();
+        if (savedPathsSize > 0) {
+            mDrawnPathsQueue.remove(savedPathsSize - 1);
+        }
+    }
+
+    @Override
+    public void flush() {
+        for (PaintPath paintPath : mDrawnPathsQueue) {
+            mDrawCanvas.drawPath(paintPath.path, paintPath.paint);
+        }
+        mDrawnPathsQueue.clear();
     }
 }

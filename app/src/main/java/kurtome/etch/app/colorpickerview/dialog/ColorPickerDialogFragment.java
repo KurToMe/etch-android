@@ -64,6 +64,7 @@ public class ColorPickerDialogFragment extends DialogFragment {
 
         if (mDrawingBrush != null) {
             mOldColor.setColor(mDrawingBrush.getColor());
+            mNewColor.setColor(mDrawingBrush.getColor());
             mColorPicker.setColor(mDrawingBrush.getColor(), true);
         }
 

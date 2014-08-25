@@ -15,4 +15,8 @@ public interface DrawingStrategy {
     boolean isDrawing();
 
     void sizeChanged(int width, int height, int oldWidth, int oldHeight);
+
+    void undoLastDraw();
+
+    void flush();
 }

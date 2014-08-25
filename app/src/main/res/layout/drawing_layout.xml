@@ -1,37 +1,76 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:background="#FFFFFF"
-              android:orientation="vertical"
-              tools:context=".MainActivity">
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:orientation="vertical"
+        tools:context=".MainActivity">
 
-    <kurtome.etch.app.drawing.DrawingView
-            android:id="@+id/drawing"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_margin="4dp"
-            android:alpha="1" />
+    <RelativeLayout android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" >
 
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@color/overlay_background"
-                    android:id="@+id/drawing_loader_overlay" >
+        <kurtome.etch.app.drawing.DrawingView
+                android:id="@+id/drawing"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:layout_margin="4dp"
+                android:alpha="1" />
 
-        <ProgressBar android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:indeterminate="true"
-                android:id="@+id/drawing_loader_progress"/>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/overlay_background"
+                        android:id="@+id/drawing_loader_overlay" >
 
-        <ImageView android:layout_width="wrap_content"
-                   android:layout_height="wrap_content"
-                   android:src="@android:drawable/ic_dialog_alert"
-                   android:layout_centerInParent="true"
-                   android:contentDescription="@string/loading_error"
-                   android:id="@+id/drawing_loader_alert_img" />
+            <ProgressBar android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:layout_centerInParent="true"
+                         android:indeterminate="true"
+                         android:id="@+id/drawing_loader_progress"/>
+
+            <ImageView android:layout_width="wrap_content"
+                       android:layout_height="wrap_content"
+                       android:src="@android:drawable/ic_dialog_alert"
+                       android:layout_centerInParent="true"
+                       android:contentDescription="@string/loading_error"
+                       android:id="@+id/drawing_loader_alert_img" />
+
+        </RelativeLayout>
 
     </RelativeLayout>
 
-</RelativeLayout>
+    <RelativeLayout android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:background="@color/action_background">
+
+        <ImageButton android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:background="@drawable/action_button_background"
+                android:src="@drawable/color_palette"
+                android:padding="@dimen/action_padding"
+                android:contentDescription="@string/color_chooser"
+                android:layout_alignParentLeft="true"
+                android:id="@+id/color_picker_action" />
+
+        <ImageButton android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:background="@drawable/action_button_background"
+                     android:src="@android:drawable/ic_menu_edit"
+                     android:layout_toRightOf="@id/color_picker_action"
+                     android:padding="@dimen/action_padding"
+                     android:contentDescription="@string/brush_options"
+                     android:id="@+id/brush_options_action" />
+
+        <ImageButton android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:layout_gravity="right"
+                     android:background="@drawable/action_button_background"
+                     android:src="@drawable/undo_icon"
+                     android:layout_alignParentRight="true"
+                     android:padding="@dimen/action_padding"
+                     android:contentDescription="@string/undo"
+                     android:id="@+id/drawing_undo_action" />
+    </RelativeLayout>
+</LinearLayout>

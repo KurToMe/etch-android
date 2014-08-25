@@ -1,0 +1,7 @@
+<resources>
+
+    <dimen name="action_icon_size">48px</dimen>
+    <dimen name="action_icon_content_size">36px</dimen>
+    <dimen name="action_icon_content_margin">12px</dimen>
+
+</resources>

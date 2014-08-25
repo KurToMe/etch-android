@@ -52,6 +52,7 @@
         <ImageButton android:layout_width="wrap_content"
                      android:layout_height="wrap_content"
                      android:src="@drawable/x_icon"
+                     android:background="@drawable/action_button_background"
                      android:id="@+id/decline_color_btn"
                      android:padding="5dp"
                 />
@@ -60,7 +61,7 @@
               android:layout_width="2dp"
               android:layout_height="match_parent"
               android:layout_margin="5dp"
-              android:padding="5dp"
+              android:padding="@dimen/action_padding"
               android:id="@+id/color_picker_vertical_divider" />
 
         <kurtome.etch.app.colorpickerview.view.ColorPanelView
@@ -73,9 +74,10 @@
 
         <ImageButton android:layout_width="wrap_content"
                      android:layout_height="wrap_content"
+                     android:background="@drawable/action_button_background"
                      android:src="@drawable/checkmark"
-                     android:padding="5dp"
                      android:id="@+id/accept_color_btn"
+                     android:padding="@dimen/action_padding"
                 />
 
     </LinearLayout>

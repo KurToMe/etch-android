@@ -42,6 +42,9 @@ public class DrawingFragment extends Fragment {
     private ImageView mLoadingAlertImage;
     private ProgressBar mLoadingProgress;
     private MainActivity mMainActivity;
+    private ImageButton colorPickerButton;
+    private ImageButton strokeOptionButton;
+    private ImageButton undoButton;
 
     private static final String COLOR_PICKER_FRAGMENT_TAG = "COLOR_PICKER_FRAGMENT_TAG";
 
@@ -107,15 +110,6 @@ public class DrawingFragment extends Fragment {
             return true;
         }
 
-        if (item.getItemId() == R.id.color_chooser_action) {
-            showColorDialog();
-            return true;
-        }
-
-        if (item.getItemId() == R.id.brush_options_action) {
-            showBrushStrokePicker();
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -169,7 +163,35 @@ public class DrawingFragment extends Fragment {
             }
         });
 
+        colorPickerButton = ViewUtils.subViewById(rootView, R.id.color_picker_action);
+        colorPickerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showColorDialog();
+            }
+        });
+
+        strokeOptionButton = ViewUtils.subViewById(rootView, R.id.brush_options_action);
+        strokeOptionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showBrushStrokePicker();
+            }
+        });
+
+        undoButton = ViewUtils.subViewById(rootView, R.id.drawing_undo_action);
+        undoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                undoLastDraw();
+            }
+        });
+
         return rootView;
+    }
+
+    private void undoLastDraw() {
+        mDrawingView.undoLastDraw();
     }
 
     private void showBrushStrokePicker() {
@@ -260,8 +282,6 @@ public class DrawingFragment extends Fragment {
             }
         });
     }
-
-
 
     private String format(int e6CooridnatePart) {
         String s = String.valueOf(e6CooridnatePart);
