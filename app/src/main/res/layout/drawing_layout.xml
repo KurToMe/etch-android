@@ -44,21 +44,20 @@
     <RelativeLayout android:layout_width="match_parent"
                   android:layout_height="wrap_content"
                   android:background="@color/action_background">
-
-        <ImageButton android:layout_height="wrap_content"
+        <kurtome.etch.app.drawing.PaintSwatchButton
+                android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:background="@drawable/action_button_background"
-                android:src="@drawable/color_palette"
                 android:padding="@dimen/action_padding"
                 android:contentDescription="@string/color_chooser"
                 android:layout_alignParentLeft="true"
-                android:id="@+id/color_picker_action" />
+                android:id="@+id/color_swatch_action_btn" />
 
         <ImageButton android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
                      android:background="@drawable/action_button_background"
                      android:src="@android:drawable/ic_menu_edit"
-                     android:layout_toRightOf="@id/color_picker_action"
+                     android:layout_toRightOf="@id/color_swatch_action_btn"
                      android:padding="@dimen/action_padding"
                      android:contentDescription="@string/brush_options"
                      android:id="@+id/brush_options_action" />

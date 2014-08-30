@@ -17,6 +17,7 @@
 package kurtome.etch.app.colorpickerview.dialog;
 
 import android.app.DialogFragment;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,6 +44,7 @@ public class ColorPickerDialogFragment extends DialogFragment {
     private ImageButton mDeclineColorButton;
     private ColorPickedEvent mColorPickedEvent;
     private DrawingBrush mDrawingBrush;
+    private Runnable mDismissCallback;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -120,5 +122,20 @@ public class ColorPickerDialogFragment extends DialogFragment {
 
     public void setDrawingBrush(DrawingBrush drawingBrush) {
         mDrawingBrush = drawingBrush;
+    }
+
+    public void setOnDismissCallback(Runnable callback) {
+        if (mDismissCallback != null) {
+            throw new IllegalStateException("Only one callback supported.");
+        }
+        mDismissCallback = callback;
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        super.onDismiss(dialog);
+        if (mDismissCallback != null) {
+            mDismissCallback.run();
+        }
     }
 }

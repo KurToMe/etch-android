@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.*;
+import android.graphics.drawable.AnimationDrawable;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -278,6 +279,7 @@ public class MapFragment extends Fragment {
         if (event.getLocation().isPresent()) {
             mAccurateLocationFound = true;
             mLocation = event.getLocation().get();
+            centerOnLocation();
             attemptAddOverlaysToMapBasedOnLocation();
         }
         else if (event.getRoughLocation().isPresent() && !mAccurateLocationFound) {
@@ -327,8 +329,6 @@ public class MapFragment extends Fragment {
             return;
         }
 
-
-        centerOnLocation();
         placeEtchOverlays();
     }
 
@@ -358,6 +358,7 @@ public class MapFragment extends Fragment {
         mEtchGridOverlay = new ItemizedIconOverlay<OverlayItem>(this.getActivity(), items, ON_ITEM_GESTURE_LISTENER);
         mMapView.getOverlays().add(mEtchGridOverlay);
 
+        mMapView.invalidate();
     }
 
     private Point etchGridUpperLeft() {
@@ -423,6 +424,7 @@ public class MapFragment extends Fragment {
         mMapView.setScrollableAreaLimit(boundingBox);
 
         addCenterOverlay(userCenterPoint);
+        mMapView.invalidate();
     }
 
     private void addCenterOverlay(GeoPoint userCenterPoint) {

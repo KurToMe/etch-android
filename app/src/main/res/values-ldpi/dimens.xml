@@ -2,6 +2,6 @@
 
     <dimen name="action_icon_size">32px</dimen>
     <dimen name="action_icon_content_size">24px</dimen>
-    <dimen name="action_icon_content_margin">8px</dimen>
+    <dimen name="action_icon_content_margin">4px</dimen>
 
 </resources>

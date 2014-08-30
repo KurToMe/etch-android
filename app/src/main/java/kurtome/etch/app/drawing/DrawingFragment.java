@@ -3,6 +3,7 @@ package kurtome.etch.app.drawing;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.*;
@@ -14,7 +15,6 @@ import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
 import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogFragment;
-import kurtome.etch.app.colorpickerview.event.ColorPickedEvent;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
@@ -42,9 +42,9 @@ public class DrawingFragment extends Fragment {
     private ImageView mLoadingAlertImage;
     private ProgressBar mLoadingProgress;
     private MainActivity mMainActivity;
-    private ImageButton colorPickerButton;
-    private ImageButton strokeOptionButton;
-    private ImageButton undoButton;
+    private ImageButton mStrokeOptionButton;
+    private ImageButton mUndoButton;
+    private PaintSwatchButton mColorSwatchButton;
 
     private static final String COLOR_PICKER_FRAGMENT_TAG = "COLOR_PICKER_FRAGMENT_TAG";
 
@@ -73,9 +73,9 @@ public class DrawingFragment extends Fragment {
 
         mMainActivity = ObjUtils.cast(activity);
 
-        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LOW_PROFILE
-        );
+//        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
+//                View.SYSTEM_UI_FLAG_LOW_PROFILE
+//        );
         mActionBar = mMainActivity.getActionBar();
         mActionBar.setDisplayHomeAsUpEnabled(true);
     }
@@ -134,6 +134,7 @@ public class DrawingFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.drawing_layout, container, false);
 
+
         mDrawingView = ViewUtils.subViewById(rootView, R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
 
@@ -146,6 +147,32 @@ public class DrawingFragment extends Fragment {
 
         mDrawingView.setEtchAspectRatio(mEtchAspectRatio);
         String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
+
+
+        mColorSwatchButton = ViewUtils.subViewById(rootView, R.id.color_swatch_action_btn);
+        mColorSwatchButton.setColor(mDrawingBrush.getColor());
+        mColorSwatchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showColorDialog();
+            }
+        });
+
+        mStrokeOptionButton = ViewUtils.subViewById(rootView, R.id.brush_options_action);
+        mStrokeOptionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showBrushStrokePicker();
+            }
+        });
+
+        mUndoButton = ViewUtils.subViewById(rootView, R.id.drawing_undo_action);
+        mUndoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                undoLastDraw();
+            }
+        });
 
         startLoading();
         spiceManager.execute(new GetEtchRequest(mCoordinates), new RequestListener<Etch>() {
@@ -163,30 +190,6 @@ public class DrawingFragment extends Fragment {
             }
         });
 
-        colorPickerButton = ViewUtils.subViewById(rootView, R.id.color_picker_action);
-        colorPickerButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showColorDialog();
-            }
-        });
-
-        strokeOptionButton = ViewUtils.subViewById(rootView, R.id.brush_options_action);
-        strokeOptionButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showBrushStrokePicker();
-            }
-        });
-
-        undoButton = ViewUtils.subViewById(rootView, R.id.drawing_undo_action);
-        undoButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                undoLastDraw();
-            }
-        });
-
         return rootView;
     }
 
@@ -198,6 +201,16 @@ public class DrawingFragment extends Fragment {
         BrushStrokeDialog brushStrokeDialog = new BrushStrokeDialog(getActivity());
         brushStrokeDialog.setDrawingBrush(mDrawingBrush);
         brushStrokeDialog.show();
+        brushStrokeDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                syncBrushChanges();
+            }
+        });
+    }
+
+    private void syncBrushChanges() {
+        mColorSwatchButton.setColor(mDrawingBrush.getColor());
     }
 
     @Override
@@ -214,6 +227,12 @@ public class DrawingFragment extends Fragment {
                 mMainActivity.getFragmentManager(),
                 COLOR_PICKER_FRAGMENT_TAG
         );
+        dialog.setOnDismissCallback(new Runnable() {
+            @Override
+            public void run() {
+                syncBrushChanges();
+            }
+        });
     }
 
     private void showLoader() {

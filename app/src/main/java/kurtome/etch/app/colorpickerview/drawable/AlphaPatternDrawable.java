@@ -29,7 +29,7 @@ import android.graphics.drawable.Drawable;
  */
 public class AlphaPatternDrawable extends Drawable {
 
-    private final static int DEFAULT_RECTANGLE_SIZE_PX = 10;
+    public final static int DEFAULT_RECTANGLE_SIZE_PX = 20;
 
     private final int mRectangleSize;
 
@@ -89,6 +89,10 @@ public class AlphaPatternDrawable extends Drawable {
         * takes a few milliseconds.
         */
         mBitmap = createPatternBitmap(getBounds().width(), getBounds().height(), mRectangleSize);
+    }
+
+    public static Bitmap createPatternBitmap(int width, int height) {
+        return createPatternBitmap(width, height, DEFAULT_RECTANGLE_SIZE_PX);
     }
 
     /**

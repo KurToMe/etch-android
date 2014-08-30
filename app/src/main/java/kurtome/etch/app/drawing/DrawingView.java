@@ -55,6 +55,10 @@ public class DrawingView extends View {
         mDrawingBrush = new DrawingBrush();
     }
 
+    public static Bitmap createBitmap(int width, int height) {
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    }
+
     public void setEtchAspectRatio(double etchAspectRatio) {
         if (mInitialized) {
             throw new IllegalStateException("Should only initialize once.");
@@ -63,7 +67,7 @@ public class DrawingView extends View {
         mAspectRatio = etchAspectRatio;
         int width = RectangleUtils.calcWidthWithAspectRatio(IMAGE_HEIGHT_PIXELS, mAspectRatio);
         mEtchDimens = new RectangleDimensions(width, IMAGE_HEIGHT_PIXELS);
-        mCanvasBitmap = Bitmap.createBitmap(width, IMAGE_HEIGHT_PIXELS, Bitmap.Config.ARGB_8888);
+        mCanvasBitmap = createBitmap(width, IMAGE_HEIGHT_PIXELS);
 
         mDrawCanvas = new Canvas(mCanvasBitmap);
 
