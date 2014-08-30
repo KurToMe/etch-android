@@ -26,7 +26,7 @@ public class DrawingBrush {
 
     public DrawingBrush() {
         mPaint = createBasicPaint();
-        mPaint.setStrokeWidth(3);
+        mPaint.setStrokeWidth(15);
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setFilterBitmap(true);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
