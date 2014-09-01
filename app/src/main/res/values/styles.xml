@@ -1,14 +1,14 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme.Holo">
-        <!-- Customize your theme here. -->
-        <!--<item name="android:homeAsUpIndicator">@android:drawable/a</item>-->
-    </style>
+    <!--<style name="EtchTheme" parent="ActionBar.Solid.Etchtw">-->
+        <!--&lt;!&ndash; Customize your theme here. &ndash;&gt;-->
+        <!--&lt;!&ndash;<item name="android:homeAsUpIndicator">@android:drawable/a</item>&ndash;&gt;-->
+    <!--</style>-->
 
-    <style name="dialog_color_picker_view_portrait">
-        <item name="android:layout_width">fill_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-    </style>
+    <!--<style name="dialog_color_picker_view_portrait">-->
+        <!--<item name="android:layout_width">fill_parent</item>-->
+        <!--<item name="android:layout_height">wrap_content</item>-->
+    <!--</style>-->
 
 </resources>

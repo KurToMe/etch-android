@@ -10,5 +10,14 @@
     <string name="color_chooser">Color</string>
     <string name="loading_error">Loading Error</string>
     <string name="undo">Undo</string>
+    <string name="brush_radius">Brush Radius</string>
+    <string name="opacity">Opacity</string>
+    <string name="brush_mode">Brush Mode</string>
+
+    <string-array name="brush_modes_array">
+        <item>Normal</item>
+        <item>Replace</item>
+        <item>Under</item>
+    </string-array>
 
 </resources>

@@ -2,30 +2,29 @@ package kurtome.etch.app.drawing;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.graphics.PorterDuff;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.*;
 import kurtome.etch.app.R;
+import kurtome.etch.app.util.ViewUtils;
 
 public class BrushStrokeDialog extends AlertDialog {
 
     private static final int MIN_STROKE_WIDTH = 1;
     private static final int MAX_STROKE_WIDTH = 100;
-    public static final int MAX_OPACITY = 255;
 
     private DrawingBrush mDrawingBrush;
     private View mLayoutView;
 
     private SeekBar mStrokeWidthSeek;
     private TextView mStrokeWidthText;
+    private ImageButton mAcceptButton;
+    private ImageButton mDeclineButton;
 
-    private SeekBar mStrokeOpacitySeek;
-    private TextView mStrokeOpacityText;
 
-    private RadioButton mStrokeNormalModeButton;
-    private RadioButton mStrokeReplaceModeButton;
-    private RadioButton mStrokeUnderModeButton;
+    private Spinner mBrushModeSpinner;
+    private int mStrokeWidth;
+    private BrushMode mBrushMode;
 
     public BrushStrokeDialog(Context context) {
         super(context);
@@ -41,7 +40,7 @@ public class BrushStrokeDialog extends AlertDialog {
         mStrokeWidthSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                setStrokeWidth(progress);
+                setStrokeWidthFromPrecent(progress);
             }
 
             @Override
@@ -51,75 +50,62 @@ public class BrushStrokeDialog extends AlertDialog {
             public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
-        mStrokeOpacityText = (TextView) mLayoutView.findViewById(R.id.stroke_opacity_txt);
-        mStrokeOpacitySeek = (SeekBar) mLayoutView.findViewById(R.id.stroke_opacity_seek);
-        mStrokeOpacitySeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        mBrushModeSpinner = ViewUtils.subViewById(mLayoutView, R.id.brush_mode_spinner);
+        final ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                context,
+                R.array.brush_modes_array, // currently this and the enum BrushMode could get out of sync
+                android.R.layout.simple_spinner_item
+        );
+        mBrushModeSpinner.setAdapter(adapter);
+        mBrushModeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                setStrokeOpacity(progress);
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                BrushMode mode = BrushMode.fromDisplayPosition(position);
+                setBrushMode(mode);
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) { }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) { }
-        });
-
-        mStrokeNormalModeButton = (RadioButton) mLayoutView.findViewById(R.id.brush_mode_normal_radio);
-        mStrokeNormalModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    setStrokeModeNormal();
-                }
+            public void onNothingSelected(AdapterView<?> parent) {
             }
         });
 
-        mStrokeReplaceModeButton = (RadioButton) mLayoutView.findViewById(R.id.brush_mode_replace_radio);
-        mStrokeReplaceModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+        mAcceptButton = ViewUtils.subViewById(mLayoutView, R.id.accept_stroke_btn);
+        mAcceptButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    setStrokeModeReplace();
-                }
+            public void onClick(View v) {
+                accept();
             }
         });
 
-        mStrokeUnderModeButton = (RadioButton) mLayoutView.findViewById(R.id.brush_mode_under_radio);
-        mStrokeUnderModeButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mDeclineButton = ViewUtils.subViewById(mLayoutView, R.id.decline_stroke_btn);
+        mDeclineButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    setStrokeModeUnder();
-                }
+            public void onClick(View v) {
+                decline();
             }
         });
     }
 
-    private void setStrokeOpacity(int percent) {
-        int newStrokeOpacity = calcFromPercent(percent, 0, MAX_OPACITY);
-        mStrokeOpacityText.setText(String.format("%s%%", percent));
-        mDrawingBrush.setAlpha(newStrokeOpacity);
+    private void decline() {
+        dismiss();
     }
 
-    private void setStrokeModeNormal() {
-        mDrawingBrush.setMode(PorterDuff.Mode.SRC_OVER);
-    }
-
-    private void setStrokeModeReplace() {
-        mDrawingBrush.setMode(PorterDuff.Mode.SRC);
-    }
-
-    private void setStrokeModeUnder() {
-        mDrawingBrush.setMode(PorterDuff.Mode.DST_OVER);
+    private void accept() {
+        mDrawingBrush.setMode(mBrushMode.porterDuff);
+        mDrawingBrush.setStrokeWidth(mStrokeWidth);
+        dismiss();
     }
 
 
-    private void setStrokeWidth(int percent) {
+    private void setStrokeWidthFromPrecent(int percent) {
         int newStrokeWidth = calcFromPercent(percent, MIN_STROKE_WIDTH, MAX_STROKE_WIDTH);
-        mStrokeWidthText.setText(String.format("%spx", newStrokeWidth));
-        mDrawingBrush.setStrokeWidth(newStrokeWidth);
+        setStrokeWidth(newStrokeWidth);
+    }
+
+    private void setStrokeWidth(int width) {
+        mStrokeWidthText.setText(String.format("%spx", width));
+        mStrokeWidth = width;
     }
 
     private int calcFromPercent(int percent, int min, int max) {
@@ -137,8 +123,8 @@ public class BrushStrokeDialog extends AlertDialog {
         }
     }
 
-    private int calcProgress(float strokeWidth, int max) {
-        Integer progress = Math.round((strokeWidth / max) * 100);
+    private int calcProgress(float value, int max) {
+        Integer progress = Math.round((value / max) * 100);
         if (progress < 0) {
             return 0;
         }
@@ -148,31 +134,17 @@ public class BrushStrokeDialog extends AlertDialog {
         return progress;
     }
 
-    private void check(RadioButton button) {
-        if (!button.isChecked()) {
-            button.setChecked(true);
-        }
-    }
-
     public void setDrawingBrush(DrawingBrush drawingBrush) {
         mDrawingBrush = drawingBrush;
-        int progress = calcProgress(mDrawingBrush.getPaint().getStrokeWidth(), MAX_STROKE_WIDTH);
-        mStrokeWidthSeek.setProgress(progress);
+        setStrokeWidth(Math.round(mDrawingBrush.getPaint().getStrokeWidth()));
+        mStrokeWidthSeek.setProgress(calcProgress(mStrokeWidth, MAX_STROKE_WIDTH));
 
-        int opacityProgress = calcProgress(mDrawingBrush.getAlpha(), MAX_OPACITY);
-        mStrokeOpacitySeek.setProgress(opacityProgress);
+        BrushMode mode = BrushMode.fromPorterDuff(drawingBrush.getMode());
+        setBrushMode(mode);
+    }
 
-//        mStrokeNormalModeButton.setChecked(false);
-//        mStrokeReplaceModeButton.setChecked(false);
-//        mStrokeUnderModeButton.setChecked(false);
-        if (mDrawingBrush.getMode() == PorterDuff.Mode.SRC_OVER) {
-            check(mStrokeNormalModeButton);
-        }
-        else if (mDrawingBrush.getMode() == PorterDuff.Mode.SRC) {
-            mStrokeReplaceModeButton.setChecked(true);
-        }
-        else if (mDrawingBrush.getMode() == PorterDuff.Mode.DST_OVER) {
-            mStrokeUnderModeButton.setChecked(true);
-        }
+    private void setBrushMode(BrushMode mode) {
+        mBrushMode = mode;
+        mBrushModeSpinner.setSelection(mode.displayPosition);
     }
 }

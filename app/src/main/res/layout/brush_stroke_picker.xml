@@ -1,103 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="horizontal"
               android:layout_width="match_parent"
               android:padding="5dp"
-              android:layout_margin="5dp"
-              android:layout_height="match_parent">
+              android:columnCount="2"
+              android:layout_height="match_parent" >
 
     <TextView
-            android:id="@+id/stroke_width_label_txt"
-            android:layout_width="fill_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:id="@+id/stroke_width_label_txt"
             android:layout_marginTop="10dp"
             android:gravity="left"
-            android:text="Stroke Width"
+            android:text="@string/brush_radius"
             android:padding="5dp"
+            android:layout_margin="10dp"
+            android:layout_alignParentTop="true"
             android:textStyle="bold"
             />
     <TextView
         android:id="@+id/stroke_width_txt"
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
-        android:gravity="center"
+        android:layout_margin="10dp"
+        android:layout_alignBaseline="@id/stroke_width_label_txt"
+        android:layout_alignParentRight="true"
         android:text="5px"
         android:padding="5dp"
         android:textStyle="normal" />
 
     <SeekBar
         android:id="@+id/stroke_width_seek"
-        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:padding="5dp"
-        android:layout_margin="5dp" />
+        android:layout_below="@id/stroke_width_label_txt"
+        android:layout_width="fill_parent"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        style="@style/SeekBarAppTheme"
+        android:layout_margin="10dp" />
 
 
-    <TextView
-            android:id="@+id/stroke_opacity_label_txt"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="left"
-            android:text="Opacity"
-            android:padding="5dp"
-            android:textStyle="bold"
+    <TextView android:layout_marginTop="10dp"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:gravity="left"
+              android:text="@string/brush_mode"
+              android:layout_below="@id/stroke_width_seek"
+              android:textStyle="bold"
+              android:padding="5dp"
+              android:layout_margin="10dp"
+              android:id="@+id/stroke_mode_label_txt" />
+
+    <Spinner android:id="@+id/brush_mode_spinner"
+             android:layout_alignParentRight="true"
+             android:layout_below="@id/stroke_width_seek"
+             android:layout_alignBaseline="@id/stroke_mode_label_txt"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:padding="5dp"
+             android:layout_margin="10dp"
+             style="@style/SpinnerAppTheme"
             />
-    <TextView
-            android:id="@+id/stroke_opacity_txt"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:gravity="center"
-            android:text="100%"
-            android:padding="5dp"
-            android:textStyle="normal" />
 
-    <SeekBar
-            android:id="@+id/stroke_opacity_seek"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:padding="5dp"
-            android:layout_margin="5dp" />
+    <View android:background="@color/dark_contrast"
+          android:layout_width="match_parent"
+          android:layout_height="2dp"
+          android:padding="5dp"
+          android:layout_marginTop="10dp"
+          android:layout_marginRight="1dp"
+          android:layout_marginLeft="1dp"
+          android:layout_marginBottom="1dp"
+          android:layout_below="@id/brush_mode_spinner"
+          android:id="@+id/stroke_picker_horizontal_divider"/>
 
-    <TextView
-            android:id="@+id/stroke_mode_label_txt"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="left"
-            android:text="Stroke Mode"
-            android:textStyle="bold"
-            android:padding="5dp"
-            />
-    <RadioGroup
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:gravity="right"
-            android:layout_margin="5dp"
-            android:padding="5dp"
-            >
+    <LinearLayout android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_below="@id/stroke_picker_horizontal_divider"
+                  android:orientation="horizontal" >
 
-        <RadioButton
-            android:id="@+id/brush_mode_normal_radio"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Normal" />
+        <ImageButton android:layout_width="0dp"
+                     android:layout_weight=".5"
+                     android:layout_height="wrap_content"
+                     android:src="@drawable/ic_action_cancel"
+                     android:background="@drawable/selectable_background_etch1"
+                     android:id="@+id/decline_stroke_btn"
+                     android:padding="@dimen/action_padding"
+                     android:layout_margin="5dp" />
 
-        <RadioButton
-                android:id="@+id/brush_mode_replace_radio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Replace" />
+        <View android:background="@color/dark_contrast"
+              android:layout_width="2dp"
+              android:layout_height="match_parent"
+              android:layout_margin="1dp"
+              android:padding="@dimen/action_padding"
+              android:id="@+id/stroke_picker_vertical_divider" />
 
-        <RadioButton
-                android:id="@+id/brush_mode_under_radio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Under" />
 
-    </RadioGroup>
+        <ImageButton android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight=".5"
+                     android:background="@drawable/selectable_background_etch1"
+                     android:src="@drawable/ic_action_done"
+                     android:layout_margin="5dp"
+                     android:id="@+id/accept_stroke_btn"
+                     android:padding="@dimen/action_padding" />
 
-</LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

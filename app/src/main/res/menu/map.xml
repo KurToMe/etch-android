@@ -4,7 +4,7 @@
     
     <item android:id="@+id/refresh_map"
         android:title="@string/action_refresh_map"
-        android:icon="@android:drawable/ic_popup_sync"
+        android:icon="@drawable/ic_action_refresh"
         android:orderInCategory="100"
         android:showAsAction="ifRoom" />
 </menu>

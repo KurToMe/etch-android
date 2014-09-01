@@ -18,11 +18,12 @@
                 android:layout_margin="4dp"
                 android:alpha="1" />
 
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@color/overlay_background"
-                        android:id="@+id/drawing_loader_overlay" >
+        <kurtome.etch.app.layout.OverlayRelativeLayout
+                xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/overlay_background"
+                android:id="@+id/drawing_loader_overlay" >
 
             <ProgressBar android:layout_width="wrap_content"
                          android:layout_height="wrap_content"
@@ -32,12 +33,12 @@
 
             <ImageView android:layout_width="wrap_content"
                        android:layout_height="wrap_content"
-                       android:src="@android:drawable/ic_dialog_alert"
+                       android:src="@drawable/ic_dark_action_error"
                        android:layout_centerInParent="true"
                        android:contentDescription="@string/loading_error"
                        android:id="@+id/drawing_loader_alert_img" />
 
-        </RelativeLayout>
+        </kurtome.etch.app.layout.OverlayRelativeLayout>
 
     </RelativeLayout>
 
@@ -47,7 +48,7 @@
         <kurtome.etch.app.drawing.PaintSwatchButton
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
-                android:background="@drawable/action_button_background"
+                android:background="@drawable/selectable_background_etch1"
                 android:padding="@dimen/action_padding"
                 android:contentDescription="@string/color_chooser"
                 android:layout_alignParentLeft="true"
@@ -55,8 +56,8 @@
 
         <ImageButton android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:background="@drawable/action_button_background"
-                     android:src="@android:drawable/ic_menu_edit"
+                     android:background="@drawable/selectable_background_etch1"
+                     android:src="@drawable/ic_action_gesture"
                      android:layout_toRightOf="@id/color_swatch_action_btn"
                      android:padding="@dimen/action_padding"
                      android:contentDescription="@string/brush_options"
@@ -65,8 +66,8 @@
         <ImageButton android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
                      android:layout_gravity="right"
-                     android:background="@drawable/action_button_background"
-                     android:src="@drawable/undo_icon"
+                     android:background="@drawable/selectable_background_etch1"
+                     android:src="@drawable/ic_action_undo"
                      android:layout_alignParentRight="true"
                      android:padding="@dimen/action_padding"
                      android:contentDescription="@string/undo"

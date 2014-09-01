@@ -2,7 +2,6 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#00CCCCCC"
               android:orientation="vertical"
               tools:context=".MainActivity">
 
@@ -14,11 +13,12 @@
             android:id="@+id/etch_map_view" >
     </kurtome.etch.app.openstreetmap.EtchMapView>
 
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@color/overlay_background"
-                    android:id="@+id/map_loader_overlay" >
+    <kurtome.etch.app.layout.OverlayRelativeLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/overlay_background"
+            android:id="@+id/map_loader_overlay" >
 
         <ProgressBar android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -30,9 +30,9 @@
                    android:layout_height="wrap_content"
                    android:src="@android:drawable/ic_dialog_alert"
                    android:layout_centerInParent="true"
-                   android:contentDescription="error occurred"
+                   android:contentDescription="@string/loading_error"
                    android:id="@+id/map_loader_alert_img" />
 
-    </RelativeLayout>
+    </kurtome.etch.app.layout.OverlayRelativeLayout>
 
 </RelativeLayout>

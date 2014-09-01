@@ -40,8 +40,10 @@ public class DrawingBrush {
 //        mPaint.setStyle(Paint.Style.STROKE);
 //        mPaint.setMaskFilter(new BlurMaskFilter(mPaint.getStrokeWidth() / 2, BlurMaskFilter.Blur.NORMAL));
 
-        mMode = PorterDuff.Mode.SRC_OVER;
+        mMode = BrushMode.NORMAL.porterDuff;
         mPaint.setXfermode(new PorterDuffXfermode(mMode));
+
+
     }
 
     public Paint getPaint() {
