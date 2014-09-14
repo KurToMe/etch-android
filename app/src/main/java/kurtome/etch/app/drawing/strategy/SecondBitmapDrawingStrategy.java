@@ -51,7 +51,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         }
     }
 
-    private static final int MAX_PATH_UNDO_SIZE = 5;
+    private static final int MAX_PATH_UNDO_SIZE = 10;
 
     private List<PaintPath> mDrawnPathsQueue = Lists.newLinkedList();
 
@@ -85,7 +85,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         for (PaintPath paintPath : mDrawnPathsQueue) {
             mSecondCanvas.drawPath(paintPath.path, paintPath.paint);
         }
-        if (mDrawPath != null) {
+        if (mDrawPath != null && mIsDrawing) {
             mSecondCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
         }
         // This must be last to not change how the blending of the path and current etch look
@@ -111,7 +111,11 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
                 mLastY = touchY;
                 mFirstX = touchX;
                 mFirstY = touchY;
-                mDrawPath.moveTo(touchX - mScroll.x, touchY - mScroll.y);
+                float x = touchX - mScroll.x;
+                float y = touchY - mScroll.y;
+                mDrawPath.moveTo(x-1, y-1);
+                mDrawPath.lineTo(x, y); // immediately create one px line so a single tap will make a dot
+                mIsDrawing = false;
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (!mIsDrawing) {
@@ -120,13 +124,11 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
                         mIsDrawing = true;
                     }
                 }
-                if (mIsDrawing) {
-                    updatePathForMotion(event);
-                }
+                updatePathForMotion(event);
                 break;
             case MotionEvent.ACTION_UP:
+                updatePathForMotion(event);
                 if (mIsDrawing) {
-                    updatePathForMotion(event);
                     mDrawnPathsQueue.add(new PaintPath(mCurrentBrush, mDrawPath));
                     if (mDrawnPathsQueue.size() > MAX_PATH_UNDO_SIZE) {
                         PaintPath oldestPath = Iterables.getFirst(mDrawnPathsQueue, null);
@@ -214,5 +216,10 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
             mDrawCanvas.drawPath(paintPath.path, paintPath.paint);
         }
         mDrawnPathsQueue.clear();
+    }
+
+    @Override
+    public void forceStartDrawing() {
+        mIsDrawing = true;
     }
 }

@@ -19,4 +19,6 @@ public interface DrawingStrategy {
     void undoLastDraw();
 
     void flush();
+
+    void forceStartDrawing();
 }

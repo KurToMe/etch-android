@@ -125,6 +125,11 @@ public class DrawingView extends View {
         }
 
         if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+            if (mTouchType == TouchType.NONE) {
+                // If we never figured out how to handle this action,
+                // it should be drawing (let's a quick tap draw a dot)
+                mDrawingStrategy.forceStartDrawing();
+            }
             // let drawing strategy clean-up
             mDrawingStrategy.touchEvent(event);
 
