@@ -118,18 +118,48 @@ public class CoordinateUtils {
         return newGeoPoint;
     }
 
-    public static GeoPoint roundToMinIncrement(GeoPoint point) {
-        return new GeoPoint(
+    public static GeoPoint roundToMinIncrementTowardNorthWest(GeoPoint point) {
+        GeoPoint latLng = new GeoPoint(
                 roundToMinIncrement(point.getLatitudeE6()),
                 roundToMinIncrement(point.getLongitudeE6())
         );
+        if (isEast(point, latLng)) {
+            latLng = incrementEast(latLng, -1);
+        }
+        if (isSouth(point, latLng)) {
+            latLng = incrementSouth(latLng, -1);
+        }
+        return latLng;
     }
 
-    public static LatLng roundToMinIncrement(LatLng point) {
-        return new LatLng(
+    public static LatLng roundToMinIncrementTowardNorthWest(LatLng point) {
+        LatLng latLng = new LatLng(
                 fromE6(roundToMinIncrement(point.latitude)),
                 fromE6(roundToMinIncrement(point.longitude))
         );
+        if (isEast(point, latLng)) {
+            latLng = incrementEast(latLng, -1);
+        }
+        if (isSouth(point, latLng)) {
+            latLng = incrementSouth(latLng, -1);
+        }
+        return latLng;
+    }
+
+    private static boolean isSouth(LatLng origin, LatLng point) {
+        return origin.latitude > point.latitude;
+    }
+
+    private static boolean isEast(LatLng origin, LatLng point) {
+        return origin.longitude < point.longitude;
+    }
+
+    private static boolean isSouth(GeoPoint origin, GeoPoint point) {
+        return origin.getLatitudeE6() > point.getLatitudeE6();
+    }
+
+    private static boolean isEast(GeoPoint origin, GeoPoint point) {
+        return origin.getLongitudeE6() < point.getLongitudeE6();
     }
 
     public static Coordinates convert(GeoPoint point) {
@@ -146,14 +176,14 @@ public class CoordinateUtils {
         return coordinates;
     }
 
-    public static GeoPoint getNorthWestPointStillInSameMinIncrement(GeoPoint point) {
-        GeoPoint rounded = roundToMinIncrement(point);
-        int degreesE6 = MIN_INCREMENT / 2;
-        return new GeoPoint(
-                addNorthE6(rounded.getLatitudeE6(), degreesE6),
-                addWestE6(rounded.getLongitudeE6(), degreesE6)
-        );
-    }
+//    public static GeoPoint getNorthWestPointStillInSameMinIncrement(GeoPoint point) {
+//        GeoPoint rounded = roundToMinIncrement(point);
+//        int degreesE6 = MIN_INCREMENT / 2;
+//        return new GeoPoint(
+//                addNorthE6(rounded.getLatitudeE6(), degreesE6),
+//                addWestE6(rounded.getLongitudeE6(), degreesE6)
+//        );
+//    }
 
     public static LatLng toLatLng(Location location) {
         return new LatLng(

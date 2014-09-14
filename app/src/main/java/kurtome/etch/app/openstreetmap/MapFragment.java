@@ -344,7 +344,7 @@ public class MapFragment extends Fragment {
 
         List<OverlayItem> items = Lists.newArrayList();
         GeoPoint exactCenter = new GeoPoint(latitude, longitude);
-        GeoPoint point = CoordinateUtils.roundToMinIncrement(exactCenter);
+        GeoPoint point = CoordinateUtils.roundToMinIncrementTowardNorthWest(exactCenter);
 
         int initialOffset = (-ETCH_GRID_SIZE / 2);
         int maxOffset = -initialOffset;

@@ -12,7 +12,6 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
-import com.google.api.client.util.Lists;
 import com.google.common.base.Optional;
 import com.octo.android.robospice.SpiceManager;
 import com.squareup.otto.Bus;
@@ -20,9 +19,7 @@ import com.squareup.otto.Produce;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
-import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.drawing.RectangleUtils;
-import kurtome.etch.app.location.RefreshLocationRequest;
 import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.RectangleDimensions;
 import kurtome.etch.app.util.ViewUtils;
@@ -30,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.List;
 
 public class GoogleMapFragment extends Fragment {
 
@@ -72,6 +68,7 @@ public class GoogleMapFragment extends Fragment {
 //    private List<EtchOverlayImage> mEtchOverlays;
     private EtchOverlayManager mEtchOverlayManager;
     private GroundOverlay mEtchGroundOverlay;
+    private Location mMostRecentLocaction;
 
     public void onOverlayInvalidated() {
         mGoogleMapView.invalidate();
@@ -159,6 +156,7 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
+                mMostRecentLocaction = location;
                 if (mLocation == null) {
                     useLocation(location);
                 }
@@ -240,13 +238,19 @@ public class GoogleMapFragment extends Fragment {
 
 
     private void refreshMap() {
-        mLoadingLayout.setVisibility(View.VISIBLE);
-        mLoadingProgress.setVisibility(View.VISIBLE);
-        mLoadingAlertImage.setVisibility(View.INVISIBLE);
+//        mLoadingLayout.setVisibility(View.VISIBLE);
+//        mLoadingProgress.setVisibility(View.VISIBLE);
+//        mLoadingAlertImage.setVisibility(View.INVISIBLE);
 
         mLocation = null;
 
         mEtchOverlayManager = null;
+        mEtchGroundOverlay.remove();
+        mEtchGroundOverlay = null;
+
+        mLocation = mMostRecentLocaction;
+        centerOnLocation();
+        attemptAddOverlaysToMapBasedOnLocation();
 //        if (mEtchOverlays != null) {
 //            for (EtchOverlayImage etch : mEtchOverlays) {
 //                etch.remove();
@@ -254,12 +258,10 @@ public class GoogleMapFragment extends Fragment {
 //        }
 //        mEtchOverlays = null;
 
-        mEventBus.post(new RefreshLocationRequest());
+//        mEventBus.post(new RefreshLocationRequest());
 
-        mLoadingProgress.setVisibility(View.VISIBLE);
-        mLoadingAlertImage.setVisibility(View.INVISIBLE);
 
-        mGoogleMapView.invalidate();
+//        mGoogleMapView.invalidate();
     }
 
     @Override
@@ -408,7 +410,7 @@ public class GoogleMapFragment extends Fragment {
 
 
         LatLng exactCenter = new LatLng(latitude, longitude);
-        LatLng point = CoordinateUtils.roundToMinIncrement(exactCenter);
+        LatLng point = CoordinateUtils.roundToMinIncrementTowardNorthWest(exactCenter);
         mEtchOverlayManager = new EtchOverlayManager(this, ETCH_GRID_SIZE);
 //
         int initialOffset = (-ETCH_GRID_SIZE / 2);
@@ -420,11 +422,21 @@ public class GoogleMapFragment extends Fragment {
         LatLng northeast = CoordinateUtils.incrementEast(north, etchBoundsOffset);
         LatLng southwest = CoordinateUtils.incrementSouth(west, etchBoundsOffset);
         LatLngBounds bounds = new LatLngBounds(southwest, northeast);
-        LatLngBounds finalBounds = mEtchOverlayManager.setBounds(bounds);
+        LatLngBounds overlayBounds = mEtchOverlayManager.setBounds(bounds);
+
+        double etchLatitudeDegrees = CoordinateUtils.calculateLatitudeDegrees(bounds);
+        double etchLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(bounds);
+        double overlayLatitudeDegrees = CoordinateUtils.calculateLatitudeDegrees(overlayBounds);
+        double overlayLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(overlayBounds);
+        double widthRatio = etchLongitudeDegrees / overlayLongitudeDegrees;
+        double heightRatio = etchLatitudeDegrees / overlayLatitudeDegrees;
+
+        Bitmap bitmap = mEtchOverlayManager.getBitmap();
+        float xAnchor = (float) (bitmap.getWidth() * 0.5 * widthRatio);
+        float yAnchor = (float) (bitmap.getHeight() * 0.5 * heightRatio);
         mEtchGroundOverlay = mGoogleMap.addGroundOverlay(new GroundOverlayOptions()
-                .anchor(0, 0)
-                .image(BitmapDescriptorFactory.fromBitmap(mEtchOverlayManager.getBitmap()))
-                .positionFromBounds(finalBounds)
+                .image(BitmapDescriptorFactory.fromBitmap(bitmap))
+                .positionFromBounds(overlayBounds)
         );
         mEtchOverlayManager.setOnBitmapUpdatedListener(new OnBitmapUpdatedListener() {
             @Override
@@ -525,11 +537,8 @@ public class GoogleMapFragment extends Fragment {
         return new RectangleDimensions(x, y);
     }
 
-
-
     private boolean isAspectRatioValid(double aspectRatio) {
         return aspectRatio < 5 && aspectRatio > 0.2;
-
     }
 
     private void addEtchGroundOverlay(LatLng etchPoint, int row, int col) {
@@ -552,7 +561,7 @@ public class GoogleMapFragment extends Fragment {
 
     private void centerOnLocation() {
         LatLng center = CoordinateUtils.toLatLng(mLocation);
-        int zoomLevel = 17;
+        float zoomLevel = 17.5f;
         CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, zoomLevel);
         mGoogleMap.moveCamera(update);
 //        forceMaxZoom();
