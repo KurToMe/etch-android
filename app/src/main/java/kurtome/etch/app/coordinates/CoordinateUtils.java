@@ -6,8 +6,6 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import kurtome.etch.app.domain.Coordinates;
 import org.osmdroid.util.GeoPoint;
 
-import java.math.BigDecimal;
-
 public class CoordinateUtils {
 
 
@@ -20,16 +18,17 @@ public class CoordinateUtils {
 //    private static final double DECIMAL_DIGITS = 4;
 
     // 9.123456E6 -> 9123456
-    private static final int MIN_INCREMENT = 500;
+    private static final int MIN_INCREMENT_E6 = 500;
+    public static double MIN_INCREMENT = fromE6(MIN_INCREMENT_E6);
 
     /**
      * This must match server-side truncating to ensure we always
      * get the same coordinates.
      */
     public static int roundToMinIncrement(int partE6) {
-        double d = Integer.valueOf(partE6).doubleValue() / MIN_INCREMENT;
+        double d = Integer.valueOf(partE6).doubleValue() / MIN_INCREMENT_E6;
         int truncated = Long.valueOf(Math.round(d)).intValue();
-        int result = truncated * MIN_INCREMENT;
+        int result = truncated * MIN_INCREMENT_E6;
         return result;
     }
 
@@ -61,7 +60,7 @@ public class CoordinateUtils {
     public static GeoPoint incrementEast(GeoPoint coordinates, int times) {
         GeoPoint newGeoPoint = new GeoPoint(
                 coordinates.getLatitudeE6(),
-                addEastE6(coordinates.getLongitudeE6(), (MIN_INCREMENT * times))
+                addEastE6(coordinates.getLongitudeE6(), (MIN_INCREMENT_E6 * times))
         );
         return newGeoPoint;
     }
@@ -69,7 +68,7 @@ public class CoordinateUtils {
     public static LatLng incrementEast(LatLng coordinates, int times) {
         LatLng newGeoPoint = new LatLng(
                 coordinates.latitude,
-                fromE6(addEastE6(toE6(coordinates.longitude), (MIN_INCREMENT * times)))
+                fromE6(addEastE6(toE6(coordinates.longitude), (MIN_INCREMENT_E6 * times)))
         );
         return newGeoPoint;
     }
@@ -84,7 +83,7 @@ public class CoordinateUtils {
 //    public static LatLng incrementEast(LatLng coordinates, int times) {
 //        LatLng newGeoPoint = new LatLng(
 //                coordinates.latitude,
-//                addEastE6(coordinates.longitude, (MIN_INCREMENT * times))
+//                addEastE6(coordinates.longitude, (MIN_INCREMENT_E6 * times))
 //        );
 //        return newGeoPoint;
 //    }
@@ -104,7 +103,7 @@ public class CoordinateUtils {
 
     public static GeoPoint incrementSouth(GeoPoint coordinates, int times) {
         GeoPoint newGeoPoint = new GeoPoint(
-                addSouthE6(coordinates.getLatitudeE6(), (MIN_INCREMENT * times)),
+                addSouthE6(coordinates.getLatitudeE6(), (MIN_INCREMENT_E6 * times)),
                 coordinates.getLongitudeE6()
         );
         return newGeoPoint;
@@ -112,7 +111,7 @@ public class CoordinateUtils {
 
     public static LatLng incrementSouth(LatLng coordinates, int times) {
         LatLng newGeoPoint = new LatLng(
-                fromE6(addSouthE6(toE6(coordinates.latitude), (MIN_INCREMENT * times))),
+                fromE6(addSouthE6(toE6(coordinates.latitude), (MIN_INCREMENT_E6 * times))),
                 coordinates.longitude
         );
         return newGeoPoint;
@@ -178,7 +177,7 @@ public class CoordinateUtils {
 
 //    public static GeoPoint getNorthWestPointStillInSameMinIncrement(GeoPoint point) {
 //        GeoPoint rounded = roundToMinIncrement(point);
-//        int degreesE6 = MIN_INCREMENT / 2;
+//        int degreesE6 = MIN_INCREMENT_E6 / 2;
 //        return new GeoPoint(
 //                addNorthE6(rounded.getLatitudeE6(), degreesE6),
 //                addWestE6(rounded.getLongitudeE6(), degreesE6)

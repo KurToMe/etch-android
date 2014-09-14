@@ -20,6 +20,7 @@ import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.coordinates.CoordinateUtils;
 import kurtome.etch.app.drawing.RectangleUtils;
+import kurtome.etch.app.util.NumberUtils;
 import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.RectangleDimensions;
 import kurtome.etch.app.util.ViewUtils;
@@ -69,6 +70,7 @@ public class GoogleMapFragment extends Fragment {
     private EtchOverlayManager mEtchOverlayManager;
     private GroundOverlay mEtchGroundOverlay;
     private Location mMostRecentLocaction;
+    private boolean mAnimatingCamera;
 
     public void onOverlayInvalidated() {
         mGoogleMapView.invalidate();
@@ -164,6 +166,7 @@ public class GoogleMapFragment extends Fragment {
         });
 
         mGoogleMap.setMyLocationEnabled(true);
+        mEtchOverlayManager = new EtchOverlayManager(this, ETCH_GRID_SIZE);
 
         MapsInitializer.initialize(this.getActivity());
 
@@ -214,8 +217,7 @@ public class GoogleMapFragment extends Fragment {
 
         mAccurateLocationFound = true;
         mLocation = location;
-        centerOnLocation();
-        attemptAddOverlaysToMapBasedOnLocation();
+        centerOnLocationForEtches();
 //        mLoadingLayout.setVisibility(View.INVISIBLE);
         syncLoadingState();
     }
@@ -264,13 +266,15 @@ public class GoogleMapFragment extends Fragment {
 
         mLocation = null;
 
-        mEtchOverlayManager = null;
-        mEtchGroundOverlay.remove();
-        mEtchGroundOverlay = null;
+        mEtchOverlayManager.clearEtches();
+
+        if (mEtchGroundOverlay != null) {
+            mEtchGroundOverlay.remove();
+            mEtchGroundOverlay = null;
+        }
 
         mLocation = mMostRecentLocaction;
-        centerOnLocation();
-        attemptAddOverlaysToMapBasedOnLocation();
+        centerOnLocationForEtches();
 //        if (mEtchOverlays != null) {
 //            for (EtchOverlayImage etch : mEtchOverlays) {
 //                etch.remove();
@@ -364,7 +368,7 @@ public class GoogleMapFragment extends Fragment {
 //        if (event.getLocation().isPresent()) {
 //            mAccurateLocationFound = true;
 //            mLocation = event.getLocation().get();
-//            centerOnLocation();
+//            centerOnLocationForEtches();
 //            attemptAddOverlaysToMapBasedOnLocation();
 //        }
 //        else if (event.getRoughLocation().isPresent() && !mAccurateLocationFound) {
@@ -399,7 +403,7 @@ public class GoogleMapFragment extends Fragment {
     private static final int ETCH_GRID_SIZE = 3;
 
     private void attemptAddOverlaysToMapBasedOnLocation() {
-        if (mEtchOverlayManager != null) {
+        if (mEtchOverlayManager.hasEtches()) {
             // already added
             return;
         }
@@ -418,9 +422,13 @@ public class GoogleMapFragment extends Fragment {
             return;
         }
 
-        if (!isAspectRatioValid(calcEtchAspectRatio())) {
+        if (mAnimatingCamera) {
             return;
         }
+
+//        if (!isAspectRatioValid(calcEtchAspectRatio())) {
+//            return;
+//        }
 
         placeEtchOverlays();
     }
@@ -432,7 +440,6 @@ public class GoogleMapFragment extends Fragment {
 
         LatLng exactCenter = new LatLng(latitude, longitude);
         LatLng point = CoordinateUtils.roundToMinIncrementTowardNorthWest(exactCenter);
-        mEtchOverlayManager = new EtchOverlayManager(this, ETCH_GRID_SIZE);
 //
         int initialOffset = (-ETCH_GRID_SIZE / 2);
         int maxOffset = -initialOffset;
@@ -451,7 +458,6 @@ public class GoogleMapFragment extends Fragment {
         double overlayLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(overlayBounds);
         double widthRatio = etchLongitudeDegrees / overlayLongitudeDegrees;
         double heightRatio = etchLatitudeDegrees / overlayLatitudeDegrees;
-
         Bitmap bitmap = mEtchOverlayManager.getBitmap();
         float xAnchor = (float) (bitmap.getWidth() * 0.5 * widthRatio);
         float yAnchor = (float) (bitmap.getHeight() * 0.5 * heightRatio);
@@ -581,11 +587,29 @@ public class GoogleMapFragment extends Fragment {
 //        return etchItem;
     }
 
-    private void centerOnLocation() {
+    private void centerOnLocationForEtches() {
         LatLng center = CoordinateUtils.toLatLng(mLocation);
-        float zoomLevel = 17.5f;
-        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, zoomLevel);
-        mGoogleMap.moveCamera(update);
+        float zoomLevel = 17.75f;
+        if (isNearPositionAndZoom(center, zoomLevel)) {
+            attemptAddOverlaysToMapBasedOnLocation();
+        }
+        else {
+            mAnimatingCamera = true;
+            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, zoomLevel);
+            mGoogleMap.animateCamera(update, new GoogleMap.CancelableCallback() {
+                @Override
+                public void onFinish() {
+                    mAnimatingCamera = false;
+                    attemptAddOverlaysToMapBasedOnLocation();
+                }
+
+                @Override
+                public void onCancel() {
+                    mAnimatingCamera = false;
+                    attemptAddOverlaysToMapBasedOnLocation();
+                }
+            });
+        }
 //        forceMaxZoom();
 //        double latitude = mLocation.getLatitude();
 //        double longitude = mLocation.getLongitude();
@@ -596,6 +620,24 @@ public class GoogleMapFragment extends Fragment {
 
 //        mMapView.setScrollableAreaLimit(boundingBox);
     }
+
+    private boolean isNearPositionAndZoom(LatLng latLng, float zoomLevel) {
+        CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
+        if (!NumberUtils.isWithinEpsilon(zoomLevel, cameraPosition.zoom, 0.25)) {
+            return false;
+        }
+
+        if (!NumberUtils.isWithinEpsilon(latLng.latitude, cameraPosition.target.latitude, CoordinateUtils.MIN_INCREMENT)) {
+            return false;
+        }
+
+        if (!NumberUtils.isWithinEpsilon(latLng.longitude, cameraPosition.target.longitude, CoordinateUtils.MIN_INCREMENT)) {
+            return false;
+        }
+
+        return true;
+    }
+
 
     private void forceMaxZoom() {
         // Not sure if varying zoom levels will mess up the aspect ratios of the etch images.

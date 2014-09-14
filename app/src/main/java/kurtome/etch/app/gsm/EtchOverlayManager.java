@@ -9,6 +9,7 @@ import com.google.android.gms.maps.model.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import kurtome.etch.app.coordinates.CoordinateUtils;
+import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
 import kurtome.etch.app.drawing.RectangleUtils;
 import kurtome.etch.app.util.RectangleDimensions;
@@ -16,6 +17,7 @@ import kurtome.etch.app.util.Twos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 public class EtchOverlayManager {
@@ -23,7 +25,7 @@ public class EtchOverlayManager {
 
     private final GoogleMapFragment mGoogleMapFragment;
     private Canvas mCanvas;
-    private Bitmap mBitmap;
+    private WeakReference<Bitmap> mBitmap;
     private GoogleMap mGoogleMap;
     private LatLngBounds mGridBounds;
     private GroundOverlay mGroundOverlay;
@@ -66,9 +68,18 @@ public class EtchOverlayManager {
         double widthRatio = (mOverlayBitmapWidth * 1.0) / etchBitmapGridWidth;
         double heightRatio = (mOverlayBitmapHeight * 1.0) / etchBitmapGridHeight;
 
-        logger.debug("Creating grid bitmap of size {}x{}", mOverlayBitmapWidth, mOverlayBitmapHeight);
-        mBitmap = Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
-        mCanvas = new Canvas(mBitmap);
+        if (mBitmap != null &&
+                mBitmap.get().getWidth() == mOverlayBitmapWidth &&
+                mBitmap.get().getHeight() == mOverlayBitmapHeight) {
+            CanvasUtils.clearCanvas(mCanvas);
+        }
+        else {
+            logger.debug("Creating grid bitmap of size {}x{}", mOverlayBitmapWidth, mOverlayBitmapHeight);
+            Bitmap bitmap = Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
+            mBitmap = new WeakReference<Bitmap>(bitmap);
+            Canvas canvas = new Canvas(mBitmap.get());
+            mCanvas = canvas;
+        }
 //        mGroundOverlay = mGoogleMap.addGroundOverlay(
 //                new GroundOverlayOptions()
 //                    .anchor(0, 0)
@@ -116,16 +127,20 @@ public class EtchOverlayManager {
         int heightPx = ETCH_HEIGHT_PX;
         int width = RectangleUtils.calcWidthWithAspectRatio(heightPx, aspectRatio);
         RectangleDimensions etchSize = new RectangleDimensions(width, ETCH_HEIGHT_PX);
-        EtchOverlayImage etchOverlayImage = new EtchOverlayImage(mGoogleMapFragment, latLngBounds, etchSize);
+        final EtchOverlayImage etchOverlayImage = new EtchOverlayImage(mGoogleMapFragment, latLngBounds, etchSize);
         mEtchOverlays.add(etchOverlayImage);
         etchOverlayImage.fetchEtch();
 
         etchOverlayImage.setOnBitmapUpdatedListener(new OnBitmapUpdatedListener() {
             @Override
             public void onBitmapUpdated(Bitmap bitmap) {
+                if (!mEtchOverlays.contains(etchOverlayImage)) {
+                    return;
+                }
+
                 mCanvas.drawBitmap(bitmap, xOffset, yOffset, DrawingBrush.BASIC_PAINT);
                 if (mOnBitmapUpdatedListener != null) {
-                    mOnBitmapUpdatedListener.onBitmapUpdated(mBitmap);
+                    mOnBitmapUpdatedListener.onBitmapUpdated(mBitmap.get());
                 }
             }
         });
@@ -158,7 +173,7 @@ public class EtchOverlayManager {
     }
 
     public Bitmap getBitmap() {
-        return mBitmap;
+        return mBitmap.get();
     }
 
     public void setOnBitmapUpdatedListener(OnBitmapUpdatedListener onBitmapUpdatedListener) {
@@ -172,5 +187,25 @@ public class EtchOverlayManager {
             }
         }
         return false;
+    }
+
+    public void forceReleaseResources() {
+        mBitmap.get().recycle();
+        mBitmap = null;
+        mCanvas = null;
+        for (EtchOverlayImage etchOverlayImage : mEtchOverlays) {
+            etchOverlayImage.forceReleaseResources();
+        }
+    }
+
+    public boolean hasEtches() {
+        return !mEtchOverlays.isEmpty();
+    }
+
+    public void clearEtches() {
+        for (EtchOverlayImage etchOverlayImage : mEtchOverlays) {
+            etchOverlayImage.forceReleaseResources();
+        }
+        mEtchOverlays.clear();
     }
 }
