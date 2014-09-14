@@ -41,6 +41,7 @@ public class EtchOverlayImage {
     private static final int ETCH_OVERLAY_HEIGHT_PX = 1024;
     private LatLng mOrigin;
     private OnBitmapUpdatedListener mOnBitmapUpdatedListener;
+    private boolean mLoading;
 
     public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds, RectangleDimensions etchSize) {
         mMapFragment = mapFragment;
@@ -91,16 +92,20 @@ public class EtchOverlayImage {
     }
 
     public void fetchEtch() {
+        mLoading = true;
         drawIconOverlay(mDownloadingBitmap);
 
         mMapFragment.spiceManager.execute(new GetEtchRequest(mEtchCoordinates), new RequestListener<Etch>() {
             @Override
             public void onRequestFailure(SpiceException e) {
                 logger.error("Error getting etch for location {}.", mEtchCoordinates, e);
+                mLoading = false;
+                drawIconOverlay(mAlertBitmap);
             }
 
             @Override
             public void onRequestSuccess(Etch etch) {
+                mLoading = false;
                 if (etch.getGzipImage().length > 0) {
                     Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
                     if (bytes.isPresent()) {
@@ -188,5 +193,9 @@ public class EtchOverlayImage {
 
     public Bitmap getBitmap() {
         return mEtchBitmap;
+    }
+
+    public boolean isLoading() {
+        return mLoading;
     }
 }

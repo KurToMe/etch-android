@@ -171,10 +171,11 @@ public class GoogleMapFragment extends Fragment {
 //        mMapView = ViewUtils.subViewById(mView, R.id.etch_map_view);
 //        mMapController = mMapView.getController();
 //
-        mLoadingLayout = ViewUtils.subViewById(mView, R.id.map_loader_overlay);
-        mLoadingProgress = ViewUtils.subViewById(mView, R.id.map_loader_progress);
-        mLoadingAlertImage = ViewUtils.subViewById(mView, R.id.map_loader_alert_img);
-        mLoadingAlertImage.setVisibility(View.INVISIBLE);
+//        mLoadingLayout = ViewUtils.subViewById(mView, R.id.map_loader_overlay);
+//        mLoadingProgress = ViewUtils.subViewById(mView, R.id.map_loader_progress);
+//        mLoadingAlertImage = ViewUtils.subViewById(mView, R.id.map_loader_alert_img);
+//        mLoadingAlertImage.setVisibility(View.INVISIBLE);
+
 //
 //        final ITileSource tileSource = createOsmFr();
 //        mMapView.setTileSource(tileSource);
@@ -215,7 +216,25 @@ public class GoogleMapFragment extends Fragment {
         mLocation = location;
         centerOnLocation();
         attemptAddOverlaysToMapBasedOnLocation();
-        mLoadingLayout.setVisibility(View.INVISIBLE);
+//        mLoadingLayout.setVisibility(View.INVISIBLE);
+        syncLoadingState();
+    }
+
+    private void syncLoadingState() {
+        boolean loading = isLoading();
+        mMainActivity.setProgressBarIndeterminateVisibility(loading);
+    }
+
+    private boolean isLoading() {
+        if (mLocation == null) {
+            return true;
+        }
+
+        if (mEtchOverlayManager != null && mEtchOverlayManager.isLoading()) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -226,6 +245,7 @@ public class GoogleMapFragment extends Fragment {
                 View.SYSTEM_UI_FLAG_VISIBLE
         );
         mMainActivity.getActionBar().setDisplayHomeAsUpEnabled(false);
+        mMainActivity.setProgressBarIndeterminateVisibility(true);
 
 //        mGoogleMapFragment = ActivityUtils.fragmentById(mMainActivity, R.id.google_map_fragment);
 //        mGoogleMap = mGoogleMapFragment.getMap();
@@ -262,6 +282,7 @@ public class GoogleMapFragment extends Fragment {
 
 
 //        mGoogleMapView.invalidate();
+        syncLoadingState();
     }
 
     @Override
@@ -442,6 +463,7 @@ public class GoogleMapFragment extends Fragment {
             @Override
             public void onBitmapUpdated(Bitmap bitmap) {
                 mEtchGroundOverlay.setImage(BitmapDescriptorFactory.fromBitmap(bitmap));
+                syncLoadingState();
             }
         });
 

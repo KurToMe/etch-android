@@ -18,7 +18,7 @@
                 android:layout_margin="4dp"
                 android:alpha="1" />
 
-        <kurtome.etch.app.layout.OverlayRelativeLayout
+        <kurtome.etch.app.view.OverlayRelativeLayout
                 xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -38,7 +38,7 @@
                        android:contentDescription="@string/loading_error"
                        android:id="@+id/drawing_loader_alert_img" />
 
-        </kurtome.etch.app.layout.OverlayRelativeLayout>
+        </kurtome.etch.app.view.OverlayRelativeLayout>
 
     </RelativeLayout>
 

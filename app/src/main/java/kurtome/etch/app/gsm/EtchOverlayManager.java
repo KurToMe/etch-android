@@ -32,7 +32,6 @@ public class EtchOverlayManager {
     private List<EtchOverlayImage> mEtchOverlays = Lists.newArrayList();
     private int mGridSize;
 
-
     private static final int ETCH_HEIGHT_PX = 500;
 
     private LatLng mOrigin;
@@ -164,5 +163,14 @@ public class EtchOverlayManager {
 
     public void setOnBitmapUpdatedListener(OnBitmapUpdatedListener onBitmapUpdatedListener) {
         mOnBitmapUpdatedListener = onBitmapUpdatedListener;
+    }
+
+    public boolean isLoading() {
+        for (EtchOverlayImage etchOverlayImage : mEtchOverlays) {
+            if (etchOverlayImage.isLoading()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
