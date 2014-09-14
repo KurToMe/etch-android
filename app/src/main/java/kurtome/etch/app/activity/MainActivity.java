@@ -4,9 +4,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.location.Location;
 import android.os.Bundle;
-import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
 import com.squareup.otto.Bus;
@@ -14,10 +12,9 @@ import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.drawing.DrawingFragment;
-import kurtome.etch.app.location.event.LocationFoundEvent;
+import kurtome.etch.app.gsm.GoogleMapFragment;
+import kurtome.etch.app.gsm.MapLocationSelectedEvent;
 import kurtome.etch.app.location.LocationProducer;
-import kurtome.etch.app.openstreetmap.MapFragment;
-import kurtome.etch.app.openstreetmap.MapLocationSelectedEvent;
 
 import javax.inject.Inject;
 
@@ -33,7 +30,8 @@ public class MainActivity extends Activity {
     private static final String DRAWING_ADDED_BACKSTACK = "drawing-added";
     private static final String DRAWING_FRAGMENT_TAG = "drawing-fragment-tag";
 
-    private final MapFragment mMapFragment = new MapFragment();
+//    private final MapFragment mMapFragment = new MapFragment();
+    private final GoogleMapFragment mMapFragment = new GoogleMapFragment();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

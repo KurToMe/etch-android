@@ -10,6 +10,7 @@ import dagger.Provides;
 import kurtome.etch.app.activity.MainActivity;
 import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogFragment;
 import kurtome.etch.app.drawing.DrawingFragment;
+import kurtome.etch.app.gsm.GoogleMapFragment;
 import kurtome.etch.app.location.LocationFetchManager;
 import kurtome.etch.app.location.LocationFetchProcessor;
 import kurtome.etch.app.location.LocationFetcher;
@@ -24,6 +25,7 @@ import javax.inject.Singleton;
                 MainActivity.class,
                 DrawingFragment.class,
                 MapFragment.class,
+                GoogleMapFragment.class,
                 LocationProducer.class,
                 LocationFetchManager.class,
                 LocationFetcher.class,

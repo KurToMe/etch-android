@@ -56,6 +56,7 @@ public class MapFragment extends Fragment {
                 public boolean onItemSingleTapUp(int index, OverlayItem item) {
                     if (item instanceof EtchOverlayItem) {
                         goToSelectedEtch((EtchOverlayItem) item);
+                        return true;
                     }
                     return false;
                 }
@@ -68,6 +69,10 @@ public class MapFragment extends Fragment {
 
                 @Override
                 public boolean onItemLongPress(int index, OverlayItem item) {
+                    if (item instanceof EtchOverlayItem) {
+                        goToSelectedEtch((EtchOverlayItem) item);
+                        return true;
+                    }
                     return false;
                 }
             };
