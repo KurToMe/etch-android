@@ -128,7 +128,8 @@ public class GoogleMapFragment extends Fragment {
             return;
         }
 
-        Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(latLng);
+        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
+        Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
         if (etch.isPresent()) {
             goToSelectedEtch(etch.get());
         }

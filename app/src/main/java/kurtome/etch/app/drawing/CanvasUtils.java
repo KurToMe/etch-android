@@ -12,7 +12,6 @@ public class CanvasUtils {
     }
 
     public static void drawBitmapFromGzip(Canvas canvas, byte[] gzipImage) {
-        Optional<Integer> scaleSize = Optional.absent();
         Optional<RectangleDimensions> desiredSize = Optional.absent();
         drawBitmapFromGzip(canvas, gzipImage, desiredSize);
     }
