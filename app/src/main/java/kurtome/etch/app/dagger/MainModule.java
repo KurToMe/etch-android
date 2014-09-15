@@ -15,7 +15,6 @@ import kurtome.etch.app.location.LocationFetchManager;
 import kurtome.etch.app.location.LocationFetchProcessor;
 import kurtome.etch.app.location.LocationFetcher;
 import kurtome.etch.app.location.LocationProducer;
-import kurtome.etch.app.openstreetmap.MapFragment;
 import kurtome.etch.app.util.ContextUtils;
 
 import javax.inject.Singleton;
@@ -24,7 +23,6 @@ import javax.inject.Singleton;
         injects = {
                 MainActivity.class,
                 DrawingFragment.class,
-                MapFragment.class,
                 GoogleMapFragment.class,
                 LocationProducer.class,
                 LocationFetchManager.class,

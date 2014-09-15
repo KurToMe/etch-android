@@ -19,19 +19,18 @@ import kurtome.etch.app.util.RectangleDimensions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.ref.WeakReference;
-
 public class EtchOverlayImage {
     private static Logger logger = LoggerFactory.getLogger(EtchOverlayImage.class);
 
     private final RectangleDimensions mEtchSize;
+    private final int mOverlayBitmapWidth;
+    private final int mOverlayBitmapHeight;
+    private final LatLngBounds mOverlayBounds;
     private GoogleMapFragment mMapFragment;
     private Coordinates mEtchCoordinates;
 //    private Canvas mCanvas;
     private double mEtchAspectRatio;
 
-    private Bitmap mDownloadingBitmap;
-    private Bitmap mAlertBitmap;
     private Paint mOverlayPaint = new Paint();
     private LatLngBounds mLatLngBounds;
 
@@ -40,44 +39,55 @@ public class EtchOverlayImage {
     private final Point mStatusIconOffset;
 //    private WeakReference<Bitmap> mEtchBitmap;
 
-    private static final int ETCH_OVERLAY_HEIGHT_PX = 1024;
+    /**
+     * Currently assumes this is a power of two so it can be used for the sample size
+     */
+    private static final int ETCH_OVERLAY_DENSITY_RATIO = 2;
+
+    /**
+     * Must be power of two to work well with google map
+     */
+    private static final int ETCH_MAP_HEIGHT_PX = DrawingView.IMAGE_HEIGHT_PIXELS / ETCH_OVERLAY_DENSITY_RATIO;
     private LatLng mOrigin;
     private OnBitmapUpdatedListener mOnBitmapUpdatedListener;
     private boolean mLoading;
     private boolean mReleased;
+    private GroundOverlay mGroundOverlay;
 
-    public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds, RectangleDimensions etchSize) {
+    public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds) {
         mMapFragment = mapFragment;
-        mEtchSize = etchSize;
-        mEtchAspectRatio = RectangleUtils.calculateAspectRatio(etchSize);
         mOverlayPaint.setColor(Color.BLACK);
         mOverlayPaint.setAlpha(100);
         mLatLngBounds = latLngBounds;
         LatLng point = CoordinateUtils.northWestCorner(latLngBounds);
         mEtchCoordinates = CoordinateUtils.convert(point);
 
-//        int heightPx = ETCH_OVERLAY_HEIGHT_PX;
-//        int width = RectangleUtils.calcWidthWithAspectRatio(heightPx, mEtchAspectRatio);
-//        mEtchBitmap = new WeakReference<Bitmap>(Bitmap.createBitmap(etchSize.width, etchSize.height, Bitmap.Config.ARGB_8888));
-//        mCanvas = new Canvas(mEtchBitmap.get());
-//        mGroundOverlay = mMapFragment.getMap().addGroundOverlay(
-//                new GroundOverlayOptions()
-//                        .image(BitmapDescriptorFactory.fromBitmap(mEtchBitmap))
-//                        .positionFromBounds(latLngBounds)
-//                        .anchor(0, 0)
-//        );
 
-        mStatusIconSize = etchSize.width / 3;
+        int heightPx = ETCH_MAP_HEIGHT_PX;
+        mEtchAspectRatio = ProjectionUtils.calcAspectRatio(mapFragment.getMap().getProjection(), latLngBounds);
+        int widthPx = RectangleUtils.calcWidthWithAspectRatio(heightPx, mEtchAspectRatio);
 
-        Bitmap downloadingBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.downloading);
-        mStatusIconOffset = new Point(
-                (etchSize.width - mStatusIconSize) / 2,
-                (etchSize.height - mStatusIconSize) / 2
+        mOverlayBitmapWidth = ETCH_MAP_HEIGHT_PX;
+        mOverlayBitmapHeight = ETCH_MAP_HEIGHT_PX; // leaves extra width, but must be power of two so just make it square
+
+        mEtchSize = new RectangleDimensions(widthPx, heightPx);
+
+        mOverlayBounds = ProjectionUtils.extendWidthToCreateSquareBounds(
+                mapFragment.getMap().getProjection(),
+                latLngBounds
         );
-        mDownloadingBitmap = Bitmap.createScaledBitmap(downloadingBmp, mStatusIconSize, mStatusIconSize, false);
 
-        Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
-        mAlertBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
+
+        double heightRatio = (mOverlayBitmapHeight * 1.0) / heightPx;
+
+
+        mStatusIconSize = mEtchSize.width / 3;
+
+        mStatusIconOffset = new Point(
+                (mEtchSize.width - mStatusIconSize) / 2,
+                (mEtchSize.height - mStatusIconSize) / 2
+        );
+
     }
 
     public Coordinates getEtchCoordinates() {
@@ -105,7 +115,10 @@ public class EtchOverlayImage {
                 }
                 logger.error("Error getting etch for location {}.", mEtchCoordinates, e);
                 mLoading = false;
-                drawIconOverlay(mAlertBitmap);
+
+                Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
+                Bitmap overlayBitmap = drawIconOverlay(scaledBitmap);
             }
 
             @Override
@@ -114,68 +127,104 @@ public class EtchOverlayImage {
                     return;
                 }
                 mLoading = false;
-                if (etch.getGzipImage().length > 0) {
-                    Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
-                    if (bytes.isPresent()) {
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
-                        drawBitmap(bitmap);
-                    }
-                    else {
-                        drawIconOverlay(mAlertBitmap);
-                    }
-                }
-                else {
-                    drawEmptyEtch();
-                }
+
+                Bitmap overlayBitmap = getOverlayBitmap(etch);
+
+                mGroundOverlay = mMapFragment.getMap().addGroundOverlay(
+                        new GroundOverlayOptions()
+                                .image(BitmapDescriptorFactory.fromBitmap(overlayBitmap))
+                                .positionFromBounds(mOverlayBounds)
+                                .anchor(0, 0)
+                );
             }
         });
     }
 
-    private void drawIconOverlay(Bitmap iconBitmap) {
-        Bitmap bitmap = Bitmap.createBitmap(mEtchSize.width, mEtchSize.height, Bitmap.Config.ARGB_8888);
+    private Bitmap getOverlayBitmap(Etch etch) {
+        if (etch.getGzipImage().length > 0) {
+            Optional<byte[]> bytes = GzipUtils.unzip(etch.getGzipImage());
+            if (bytes.isPresent()) {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inSampleSize = ETCH_OVERLAY_DENSITY_RATIO;
+                int offset = 0;
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), offset, bytes.get().length, options);
+                return createScaledEtchBitmap(bitmap, ETCH_MAP_HEIGHT_PX);
+            }
+            else {
+                Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
+                return drawIconOverlay(scaledBitmap);
+            }
+        }
+        else {
+            return drawEmptyEtch();
+        }
+    }
+
+    private Bitmap drawIconOverlay(Bitmap iconBitmap) {
+        Bitmap bitmap = Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawPaint(mOverlayPaint);
         canvas.drawBitmap(iconBitmap, mStatusIconOffset.x, mStatusIconOffset.y, DrawingBrush.BASIC_PAINT);
         drawBorder(canvas);
         mMapFragment.onOverlayInvalidated();
-        bitmapUpdated(bitmap);
+        return bitmap;
     }
 
+    private Bitmap createOverlayBitmap() {
+        return Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
+    }
 
-    private void drawEmptyEtch() {
-        Bitmap bitmap = Bitmap.createBitmap(mEtchSize.width, mEtchSize.height, Bitmap.Config.ARGB_8888);
+    private Bitmap drawEmptyEtch() {
+        Bitmap bitmap = createOverlayBitmap();
         Canvas canvas = new Canvas(bitmap);
         drawBorder(canvas);
         mMapFragment.onOverlayInvalidated();
-        bitmapUpdated(bitmap);
+        return bitmap;
     }
 
-    public void drawBitmap(Bitmap bitmap) {
-        Bitmap etchBitmap = Bitmap.createBitmap(mEtchSize.width, mEtchSize.height, Bitmap.Config.ARGB_8888);
+    public Bitmap createScaledEtchBitmap(Bitmap bitmap, int srcHeight) {
+        Bitmap etchBitmap = createOverlayBitmap();
         Canvas canvas = new Canvas(etchBitmap);
+
+
+        Optional<RectangleDimensions> desiredSize = calcScaleDimensions(bitmap, srcHeight);
+        CanvasUtils.drawBitmapScalingBasedOnHeightThenCropping(canvas, bitmap, desiredSize);
+
+        drawBorder(canvas);
+        return etchBitmap;
+    }
+
+    public void setEtchBitmap(Bitmap bitmap) {
+        Bitmap bitmapToDraw = createScaledEtchBitmap(bitmap, bitmap.getHeight());
+
+        mGroundOverlay.setImage(BitmapDescriptorFactory.fromBitmap(bitmapToDraw));
+    }
+
+    private Optional<RectangleDimensions> calcScaleDimensions(Bitmap bitmap, int srcHeight) {
+        if (bitmap.getHeight() == mEtchSize.height &&
+                bitmap.getWidth() <= mEtchSize.width) {
+            return Optional.absent();
+        }
 
         // The image will be opened in a canvas of height DrawingView.IMAGE_HEIGHT_PIXELS,
         // so make sure to correctly show how much of that height it takes up.
         // (this could differ if the etch was saved on server when the height constant was different)
-        double heightPercentage = Double.valueOf(bitmap.getHeight()) / DrawingView.IMAGE_HEIGHT_PIXELS;
-        int finalHeight = (int) Math.round(mEtchSize.height * heightPercentage);
+        double scaleRatio = Double.valueOf(bitmap.getHeight()) / srcHeight;
 
         // if for some reason the incoming bitmap is wider than it should be,
         // the extra width will get chopped off
         // (we're being ok with that for now (since we're driving everything off the height))
-        Optional<Integer> desiredHeight = Optional.of(finalHeight);
-        CanvasUtils.drawBitmap(canvas, bitmap, desiredHeight);
+        int finalHeight = (int) Math.round(mEtchSize.height * scaleRatio);
 
-        drawBorder(canvas);
-        mMapFragment.onOverlayInvalidated();
-        bitmapUpdated(etchBitmap);
+        // Desired width is constant because we'll just crop the extra if there is any after scaling.
+        // When scaling we'll keep the aspect ratio to prevent distortion
+        int finalWidth = mEtchSize.width;
+
+        RectangleDimensions desiredSize = new RectangleDimensions(finalWidth, finalHeight);
+        return Optional.of(desiredSize);
     }
 
-    private void bitmapUpdated(Bitmap bitmap) {
-        if (mOnBitmapUpdatedListener != null) {
-            mOnBitmapUpdatedListener.onBitmapUpdated(bitmap);
-        }
-    }
 
     public void remove() {
 //        mGroundOverlay.remove();
@@ -202,12 +251,10 @@ public class EtchOverlayImage {
     }
 
     public void forceReleaseResources() {
-        mAlertBitmap.recycle();
-        mAlertBitmap = null;
-
-        mDownloadingBitmap.recycle();
-        mDownloadingBitmap = null;
-
+        if (mGroundOverlay != null) {
+            mGroundOverlay.remove();
+            mGroundOverlay = null;
+        }
 
         mReleased = true;
     }

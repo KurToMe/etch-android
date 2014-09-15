@@ -295,7 +295,7 @@ public class DrawingFragment extends Fragment {
             @Override
             public void onRequestSuccess(Void v) {
                 logger.debug("Saved etch {}.", saveEtchCommand);
-                mEtchOverlayItem.drawBitmap(currentBitmap);
+                mEtchOverlayItem.setEtchBitmap(currentBitmap);
                 endLoading();
                 mMainActivity.popToMap();
             }

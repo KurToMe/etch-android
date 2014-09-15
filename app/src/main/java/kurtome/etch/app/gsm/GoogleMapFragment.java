@@ -450,28 +450,28 @@ public class GoogleMapFragment extends Fragment {
         LatLng northeast = CoordinateUtils.incrementEast(north, etchBoundsOffset);
         LatLng southwest = CoordinateUtils.incrementSouth(west, etchBoundsOffset);
         LatLngBounds bounds = new LatLngBounds(southwest, northeast);
-        LatLngBounds overlayBounds = mEtchOverlayManager.setBounds(bounds);
+//        LatLngBounds overlayBounds = mEtchOverlayManager.setBounds(bounds);
 
-        double etchLatitudeDegrees = CoordinateUtils.calculateLatitudeDegrees(bounds);
-        double etchLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(bounds);
-        double overlayLatitudeDegrees = CoordinateUtils.calculateLatitudeDegrees(overlayBounds);
-        double overlayLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(overlayBounds);
-        double widthRatio = etchLongitudeDegrees / overlayLongitudeDegrees;
-        double heightRatio = etchLatitudeDegrees / overlayLatitudeDegrees;
-        Bitmap bitmap = mEtchOverlayManager.getBitmap();
-        float xAnchor = (float) (bitmap.getWidth() * 0.5 * widthRatio);
-        float yAnchor = (float) (bitmap.getHeight() * 0.5 * heightRatio);
-        mEtchGroundOverlay = mGoogleMap.addGroundOverlay(new GroundOverlayOptions()
-                .image(BitmapDescriptorFactory.fromBitmap(bitmap))
-                .positionFromBounds(overlayBounds)
-        );
-        mEtchOverlayManager.setOnBitmapUpdatedListener(new OnBitmapUpdatedListener() {
-            @Override
-            public void onBitmapUpdated(Bitmap bitmap) {
-                mEtchGroundOverlay.setImage(BitmapDescriptorFactory.fromBitmap(bitmap));
-                syncLoadingState();
-            }
-        });
+//        double etchLatitudeDegrees = CoordinateUtils.calculateLatitudeDegrees(bounds);
+//        double etchLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(bounds);
+//        double overlayLatitudeDegrees = CoordinateUtils.calculateLatitudeDegrees(overlayBounds);
+//        double overlayLongitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(overlayBounds);
+//        double widthRatio = etchLongitudeDegrees / overlayLongitudeDegrees;
+//        double heightRatio = etchLatitudeDegrees / overlayLatitudeDegrees;
+//        Bitmap bitmap = mEtchOverlayManager.getBitmap();
+//        float xAnchor = (float) (bitmap.getWidth() * 0.5 * widthRatio);
+//        float yAnchor = (float) (bitmap.getHeight() * 0.5 * heightRatio);
+//        mEtchGroundOverlay = mGoogleMap.addGroundOverlay(new GroundOverlayOptions()
+//                .image(BitmapDescriptorFactory.fromBitmap(bitmap))
+//                .positionFromBounds(overlayBounds)
+//        );
+//        mEtchOverlayManager.setOnBitmapUpdatedListener(new OnBitmapUpdatedListener() {
+//            @Override
+//            public void onBitmapUpdated(Bitmap bitmap) {
+//                mEtchGroundOverlay.setImage(BitmapDescriptorFactory.fromBitmap(bitmap));
+//                syncLoadingState();
+//            }
+//        });
 
         for (int longOffset = initialOffset; longOffset <= maxOffset; longOffset++) {
             for (int latOffset = initialOffset; latOffset <= maxOffset; latOffset++) {

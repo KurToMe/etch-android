@@ -4,7 +4,6 @@ import android.location.Location;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import kurtome.etch.app.domain.Coordinates;
-import org.osmdroid.util.GeoPoint;
 
 public class CoordinateUtils {
 
@@ -57,14 +56,6 @@ public class CoordinateUtils {
         return longitudeE6 - degreesWestE6;
     }
 
-    public static GeoPoint incrementEast(GeoPoint coordinates, int times) {
-        GeoPoint newGeoPoint = new GeoPoint(
-                coordinates.getLatitudeE6(),
-                addEastE6(coordinates.getLongitudeE6(), (MIN_INCREMENT_E6 * times))
-        );
-        return newGeoPoint;
-    }
-
     public static LatLng incrementEast(LatLng coordinates, int times) {
         LatLng newGeoPoint = new LatLng(
                 coordinates.latitude,
@@ -101,34 +92,12 @@ public class CoordinateUtils {
         return latitudeE6 + degreesNorthE6;
     }
 
-    public static GeoPoint incrementSouth(GeoPoint coordinates, int times) {
-        GeoPoint newGeoPoint = new GeoPoint(
-                addSouthE6(coordinates.getLatitudeE6(), (MIN_INCREMENT_E6 * times)),
-                coordinates.getLongitudeE6()
-        );
-        return newGeoPoint;
-    }
-
     public static LatLng incrementSouth(LatLng coordinates, int times) {
         LatLng newGeoPoint = new LatLng(
                 fromE6(addSouthE6(toE6(coordinates.latitude), (MIN_INCREMENT_E6 * times))),
                 coordinates.longitude
         );
         return newGeoPoint;
-    }
-
-    public static GeoPoint roundToMinIncrementTowardNorthWest(GeoPoint point) {
-        GeoPoint latLng = new GeoPoint(
-                roundToMinIncrement(point.getLatitudeE6()),
-                roundToMinIncrement(point.getLongitudeE6())
-        );
-        if (isEast(point, latLng)) {
-            latLng = incrementEast(latLng, -1);
-        }
-        if (isSouth(point, latLng)) {
-            latLng = incrementSouth(latLng, -1);
-        }
-        return latLng;
     }
 
     public static LatLng roundToMinIncrementTowardNorthWest(LatLng point) {
@@ -151,21 +120,6 @@ public class CoordinateUtils {
 
     private static boolean isEast(LatLng origin, LatLng point) {
         return origin.longitude < point.longitude;
-    }
-
-    private static boolean isSouth(GeoPoint origin, GeoPoint point) {
-        return origin.getLatitudeE6() > point.getLatitudeE6();
-    }
-
-    private static boolean isEast(GeoPoint origin, GeoPoint point) {
-        return origin.getLongitudeE6() < point.getLongitudeE6();
-    }
-
-    public static Coordinates convert(GeoPoint point) {
-        Coordinates coordinates = new Coordinates();
-        coordinates.setLatitudeE6(point.getLatitudeE6());
-        coordinates.setLongitudeE6(point.getLongitudeE6());
-        return coordinates;
     }
 
     public static Coordinates convert(LatLng point) {

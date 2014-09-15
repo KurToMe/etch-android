@@ -47,7 +47,7 @@ public class DrawingView extends View {
      * Using a constant height because the distance between two latitude points
      * is roughly the same anywhere (this is not true of longitude, so we'll let the width vary)
      */
-    public static final int IMAGE_HEIGHT_PIXELS = 1500;
+    public static final int IMAGE_HEIGHT_PIXELS = 1024;
 
     public DrawingView(Context context, AttributeSet attrs) {
         super(context, attrs);

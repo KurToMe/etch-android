@@ -13,10 +13,11 @@ public class CanvasUtils {
 
     public static void drawBitmapFromGzip(Canvas canvas, byte[] gzipImage) {
         Optional<Integer> scaleSize = Optional.absent();
-        drawBitmapFromGzip(canvas, gzipImage, scaleSize);
+        Optional<RectangleDimensions> desiredSize = Optional.absent();
+        drawBitmapFromGzip(canvas, gzipImage, desiredSize);
     }
 
-    public static void drawBitmapFromGzip(Canvas canvas, byte[] gzipImage, Optional<Integer> scaleSize) {
+    public static void drawBitmapFromGzip(Canvas canvas, byte[] gzipImage, Optional<RectangleDimensions> desiredSize) {
         if (gzipImage.length <= 0) {
             return;
         }
@@ -24,22 +25,25 @@ public class CanvasUtils {
         Optional<byte[]> bytes = GzipUtils.unzip(gzipImage);
         if (bytes.isPresent()) {
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), 0, bytes.get().length);
-            drawBitmap(canvas, bitmap, scaleSize);
+            drawBitmapScalingBasedOnHeightThenCropping(canvas, bitmap, desiredSize);
         }
     }
 
     /**
-     * @param desiredHeight Scales the incoing bitmap so it's height matches incoming height.
+     * @param desiredSize Scales the incoming bitmap so it's height matches incoming height.
      *                  Aspect ratio of the original bitmap is maintained
      */
-    public static void drawBitmap(Canvas canvas, Bitmap bitmap, Optional<Integer> desiredHeight) {
-        if (desiredHeight.isPresent()) {
-            int finalHeight = desiredHeight.get();
+    public static void drawBitmapScalingBasedOnHeightThenCropping(Canvas canvas, Bitmap bitmap, Optional<RectangleDimensions> desiredSize) {
+        if (desiredSize.isPresent()) {
+            int finalHeight = desiredSize.get().height;
             int finalWidth = RectangleUtils.calcWidthMaintainingRatio(
                     new RectangleDimensions(bitmap.getWidth(), bitmap.getHeight()),
                     finalHeight
             );
             Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
+            if (desiredSize.isPresent()) {
+               scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, desiredSize.get().width, desiredSize.get().height);
+            }
             drawBitmap(canvas, scaledBitmap);
         }
         else {
