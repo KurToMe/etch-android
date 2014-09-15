@@ -49,10 +49,10 @@ public class EtchOverlayImage {
      */
     private static final int ETCH_MAP_HEIGHT_PX = DrawingView.IMAGE_HEIGHT_PIXELS / ETCH_OVERLAY_DENSITY_RATIO;
     private LatLng mOrigin;
-    private OnBitmapUpdatedListener mOnBitmapUpdatedListener;
     private boolean mLoading;
     private boolean mReleased;
     private GroundOverlay mGroundOverlay;
+    private Runnable mFinishedLoadingRunnable;
 
     public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds) {
         mMapFragment = mapFragment;
@@ -114,11 +114,13 @@ public class EtchOverlayImage {
                     return;
                 }
                 logger.error("Error getting etch for location {}.", mEtchCoordinates, e);
-                mLoading = false;
+                onFinishedLoading();
 
                 Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
                 Bitmap scaledBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
                 Bitmap overlayBitmap = drawIconOverlay(scaledBitmap);
+
+                setGroundOverlayImage(overlayBitmap);
             }
 
             @Override
@@ -126,18 +128,36 @@ public class EtchOverlayImage {
                 if (mReleased) {
                     return;
                 }
-                mLoading = false;
+                onFinishedLoading();
 
                 Bitmap overlayBitmap = getOverlayBitmap(etch);
 
-                mGroundOverlay = mMapFragment.getMap().addGroundOverlay(
-                        new GroundOverlayOptions()
-                                .image(BitmapDescriptorFactory.fromBitmap(overlayBitmap))
-                                .positionFromBounds(mOverlayBounds)
-                                .anchor(0, 0)
-                );
+                setGroundOverlayImage(overlayBitmap);
             }
         });
+    }
+
+    private void setGroundOverlayImage(Bitmap bitmap) {
+        if (mGroundOverlay == null) {
+            mGroundOverlay = mMapFragment.getMap().addGroundOverlay(
+                    new GroundOverlayOptions()
+                            .image(BitmapDescriptorFactory.fromBitmap(bitmap))
+                            .positionFromBounds(mOverlayBounds)
+                            .anchor(0, 0)
+            );
+        }
+        else {
+            mGroundOverlay.setImage(
+                    BitmapDescriptorFactory.fromBitmap(bitmap)
+            );
+        }
+    }
+
+    private void onFinishedLoading() {
+        mLoading = false;
+        if (mFinishedLoadingRunnable != null) {
+            mFinishedLoadingRunnable.run();
+        }
     }
 
     private Bitmap getOverlayBitmap(Etch etch) {
@@ -167,7 +187,6 @@ public class EtchOverlayImage {
         canvas.drawPaint(mOverlayPaint);
         canvas.drawBitmap(iconBitmap, mStatusIconOffset.x, mStatusIconOffset.y, DrawingBrush.BASIC_PAINT);
         drawBorder(canvas);
-        mMapFragment.onOverlayInvalidated();
         return bitmap;
     }
 
@@ -179,7 +198,6 @@ public class EtchOverlayImage {
         Bitmap bitmap = createOverlayBitmap();
         Canvas canvas = new Canvas(bitmap);
         drawBorder(canvas);
-        mMapFragment.onOverlayInvalidated();
         return bitmap;
     }
 
@@ -198,7 +216,7 @@ public class EtchOverlayImage {
     public void setEtchBitmap(Bitmap bitmap) {
         Bitmap bitmapToDraw = createScaledEtchBitmap(bitmap, bitmap.getHeight());
 
-        mGroundOverlay.setImage(BitmapDescriptorFactory.fromBitmap(bitmapToDraw));
+        setGroundOverlayImage(bitmapToDraw);
     }
 
     private Optional<RectangleDimensions> calcScaleDimensions(Bitmap bitmap, int srcHeight) {
@@ -225,11 +243,6 @@ public class EtchOverlayImage {
         return Optional.of(desiredSize);
     }
 
-
-    public void remove() {
-//        mGroundOverlay.remove();
-    }
-
     public LatLngBounds getLatLngBounds() {
         return mLatLngBounds;
     }
@@ -238,12 +251,8 @@ public class EtchOverlayImage {
         return mEtchAspectRatio;
     }
 
-    public LatLng getOrigin() {
-        return mOrigin;
-    }
-
-    public void setOnBitmapUpdatedListener(OnBitmapUpdatedListener onBitmapUpdatedListener) {
-        mOnBitmapUpdatedListener = onBitmapUpdatedListener;
+    public void setFinishedLoadingRunnable(Runnable runnable) {
+        mFinishedLoadingRunnable = runnable;
     }
 
     public boolean isLoading() {
