@@ -100,6 +100,7 @@ public class CoordinateUtils {
         return newGeoPoint;
     }
 
+
     public static LatLng roundToMinIncrementTowardNorthWest(LatLng point) {
         LatLng latLng = new LatLng(
                 fromE6(roundToMinIncrement(point.latitude)),
@@ -137,6 +138,18 @@ public class CoordinateUtils {
 //                addWestE6(rounded.getLongitudeE6(), degreesE6)
 //        );
 //    }
+
+    public static LatLngBounds createBoundsEnclosingXIncrements(LatLng center, int increments) {
+        LatLng origin = roundToMinIncrementTowardNorthWest(center);
+
+        LatLng north = CoordinateUtils.incrementSouth(center, -increments);
+        int incrementsFullWidth = (increments) + 1; // +1 to enclose a square
+        LatLng northeast = CoordinateUtils.incrementEast(north, incrementsFullWidth);
+        LatLng south = CoordinateUtils.incrementSouth(origin, increments);
+        LatLng southwest = CoordinateUtils.incrementEast(south, -incrementsFullWidth);
+
+        return new LatLngBounds(southwest, northeast);
+    }
 
     public static LatLng toLatLng(Location location) {
         return new LatLng(

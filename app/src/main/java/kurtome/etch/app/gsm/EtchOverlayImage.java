@@ -26,18 +26,15 @@ public class EtchOverlayImage {
     private final int mOverlayBitmapWidth;
     private final int mOverlayBitmapHeight;
     private final LatLngBounds mOverlayBounds;
+    private final boolean mEditable;
     private GoogleMapFragment mMapFragment;
     private Coordinates mEtchCoordinates;
-//    private Canvas mCanvas;
     private double mEtchAspectRatio;
 
     private Paint mOverlayPaint = new Paint();
-    private LatLngBounds mLatLngBounds;
 
-//    private final GroundOverlay mGroundOverlay;
     private final int mStatusIconSize;
     private final Point mStatusIconOffset;
-//    private WeakReference<Bitmap> mEtchBitmap;
 
     /**
      * Currently assumes this is a power of two so it can be used for the sample size
@@ -49,19 +46,18 @@ public class EtchOverlayImage {
      */
     private static final int ETCH_MAP_HEIGHT_PX = DrawingView.IMAGE_HEIGHT_PIXELS / ETCH_OVERLAY_DENSITY_RATIO;
     private LatLng mOrigin;
-    private boolean mLoading;
     private boolean mReleased;
     private GroundOverlay mGroundOverlay;
     private Runnable mFinishedLoadingRunnable;
 
-    public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds) {
+    public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds, boolean editable) {
+        mOrigin = CoordinateUtils.northWestCorner(latLngBounds);
+        mEditable = editable;
         mMapFragment = mapFragment;
         mOverlayPaint.setColor(Color.BLACK);
         mOverlayPaint.setAlpha(100);
-        mLatLngBounds = latLngBounds;
         LatLng point = CoordinateUtils.northWestCorner(latLngBounds);
         mEtchCoordinates = CoordinateUtils.convert(point);
-
 
         int heightPx = ETCH_MAP_HEIGHT_PX;
         mEtchAspectRatio = ProjectionUtils.calcAspectRatio(mapFragment.getMap().getProjection(), latLngBounds);
@@ -76,9 +72,6 @@ public class EtchOverlayImage {
                 mapFragment.getMap().getProjection(),
                 latLngBounds
         );
-
-
-        double heightRatio = (mOverlayBitmapHeight * 1.0) / heightPx;
 
 
         mStatusIconSize = mEtchSize.width / 3;
@@ -97,7 +90,10 @@ public class EtchOverlayImage {
     private void drawBorder(Canvas canvas) {
         Paint paint = new Paint();
         paint.setStrokeWidth(2);
-        paint.setColor(Color.GRAY);
+        if (!mEditable) {
+            paint.setColor(Color.GRAY);
+            paint.setAlpha(150);
+        }
         canvas.drawLine(1, 1, 1, mEtchSize.height - 1, paint); // to lower left
         canvas.drawLine(1, mEtchSize.height - 1, mEtchSize.width - 1, mEtchSize.height - 1, paint); // to lower right
         canvas.drawLine(mEtchSize.width - 1, mEtchSize.height - 1, mEtchSize.width - 1, 1, paint); // to upper right
@@ -105,8 +101,6 @@ public class EtchOverlayImage {
     }
 
     public void fetchEtch() {
-        mLoading = true;
-
         mMapFragment.spiceManager.execute(new GetEtchRequest(mEtchCoordinates), new RequestListener<Etch>() {
             @Override
             public void onRequestFailure(SpiceException e) {
@@ -154,7 +148,6 @@ public class EtchOverlayImage {
     }
 
     private void onFinishedLoading() {
-        mLoading = false;
         if (mFinishedLoadingRunnable != null) {
             mFinishedLoadingRunnable.run();
         }
@@ -243,20 +236,12 @@ public class EtchOverlayImage {
         return Optional.of(desiredSize);
     }
 
-    public LatLngBounds getLatLngBounds() {
-        return mLatLngBounds;
-    }
-
     public double getAspectRatio() {
         return mEtchAspectRatio;
     }
 
     public void setFinishedLoadingRunnable(Runnable runnable) {
         mFinishedLoadingRunnable = runnable;
-    }
-
-    public boolean isLoading() {
-        return mLoading;
     }
 
     public void forceReleaseResources() {
@@ -266,5 +251,9 @@ public class EtchOverlayImage {
         }
 
         mReleased = true;
+    }
+
+    public LatLng getEtchLatLng() {
+        return mOrigin;
     }
 }

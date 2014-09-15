@@ -38,7 +38,10 @@ public class GoogleMapFragment extends Fragment {
     private boolean mAnimatingCamera;
 
     private View mView;
+
     private Location mLocation;
+    private LatLngBounds mEditableBounds;
+
     private MapLocationSelectedEvent mLastSelectedEvent;
 
     @Inject Bus mEventBus;
@@ -93,7 +96,7 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
-                attemptAddOverlaysToMapBasedOnLocation();
+                cameraChanged(cameraPosition);
             }
         });
 
@@ -123,6 +126,23 @@ public class GoogleMapFragment extends Fragment {
         return mView;
     }
 
+    private void cameraChanged(CameraPosition cameraPosition) {
+        if (!mEtchOverlayManager.hasEtches()) {
+            attemptAddOverlaysToMapBasedOnLocation();
+        }
+        else {
+            if (cameraPosition.zoom > 15) {
+                removeEtchesFarFromLatLng(cameraPosition.target);
+                placeEtchOverlaysNearLatLng(cameraPosition.target);
+            }
+        }
+    }
+
+    private void removeEtchesFarFromLatLng(LatLng latLng) {
+        LatLngBounds bounds = CoordinateUtils.createBoundsEnclosingXIncrements(latLng, 5);
+        mEtchOverlayManager.removeEtchesOutsideOfBounds(bounds);
+    }
+
     private void mapClick(LatLng latLng) {
         if (mEtchOverlayManager == null) {
             return;
@@ -130,7 +150,7 @@ public class GoogleMapFragment extends Fragment {
 
         LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
         Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
-        if (etch.isPresent()) {
+        if (etch.isPresent() && mEditableBounds.contains(etch.get().getEtchLatLng())) {
             goToSelectedEtch(etch.get());
         }
     }
@@ -147,6 +167,11 @@ public class GoogleMapFragment extends Fragment {
         }
 
         mLocation = location;
+
+        LatLng latLng = CoordinateUtils.toLatLng(location);
+
+        mEditableBounds = CoordinateUtils.createBoundsEnclosingXIncrements(latLng, 2);
+
         centerOnLocationForEtches();
         syncLoadingState();
     }
@@ -267,15 +292,13 @@ public class GoogleMapFragment extends Fragment {
             return;
         }
 
-        placeEtchOverlays();
+        LatLng latLng = CoordinateUtils.toLatLng(mLocation);
+        placeEtchOverlaysNearLatLng(latLng);
     }
 
-    private void placeEtchOverlays() {
-        double latitude = mLocation.getLatitude();
-        double longitude = mLocation.getLongitude();
+    private void placeEtchOverlaysNearLatLng(LatLng latLng) {
 
-        LatLng exactCenter = new LatLng(latitude, longitude);
-        LatLng point = CoordinateUtils.roundToMinIncrementTowardNorthWest(exactCenter);
+        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
 
         int initialOffset = (-ETCH_GRID_SIZE / 2);
         int maxOffset = -initialOffset;
@@ -284,7 +307,7 @@ public class GoogleMapFragment extends Fragment {
             for (int latOffset = initialOffset; latOffset <= maxOffset; latOffset++) {
                 // We want to start in upper-left/north-west corner, so each increment
                 // should be in terms of amount east and south
-                LatLng eastOffset = CoordinateUtils.incrementEast(point, longOffset);
+                LatLng eastOffset = CoordinateUtils.incrementEast(etchLatLng, longOffset);
                 LatLng finalOffset = CoordinateUtils.incrementSouth(eastOffset, latOffset);
 
                 addEtchGroundOverlay(finalOffset);
@@ -299,7 +322,8 @@ public class GoogleMapFragment extends Fragment {
         LatLng southGeo = CoordinateUtils.incrementSouth(etchPoint, 1);
 
         LatLngBounds etchBounds = new LatLngBounds(southGeo, eastGeo);
-        mEtchOverlayManager.addEtch(etchBounds);
+        boolean editable = mEditableBounds.contains(etchPoint);
+        mEtchOverlayManager.addEtch(etchBounds, editable);
     }
 
     private void centerOnLocationForEtches() {
