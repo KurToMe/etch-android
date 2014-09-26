@@ -28,6 +28,7 @@ import javax.inject.Inject;
 public class GoogleMapFragment extends Fragment {
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleMapFragment.class);
+    public static final int MIN_ZOOM_FOR_ETCHES = 15;
 
     private Activity mMainActivity;
     private GoogleMap mGoogleMap;
@@ -86,6 +87,10 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMapView.onCreate(savedInstanceState);
         mGoogleMap = mGoogleMapView.getMap();
 
+//        mGoogleMap.setBuildingsEnabled(false);
+//        mGoogleMap.setIndoorEnabled(false);
+//        mGoogleMap.getUiSettings().set(false);
+
         mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
@@ -131,7 +136,7 @@ public class GoogleMapFragment extends Fragment {
             attemptAddOverlaysToMapBasedOnLocation();
         }
         else {
-            if (cameraPosition.zoom > 15) {
+            if (cameraPosition.zoom > MIN_ZOOM_FOR_ETCHES && !mAnimatingCamera) {
                 removeEtchesFarFromLatLng(cameraPosition.target);
                 placeEtchOverlaysNearLatLng(cameraPosition.target);
             }
@@ -170,7 +175,7 @@ public class GoogleMapFragment extends Fragment {
 
         LatLng latLng = CoordinateUtils.toLatLng(location);
 
-        mEditableBounds = CoordinateUtils.createBoundsEnclosingXIncrements(latLng, 2);
+        mEditableBounds = CoordinateUtils.createBoundsEnclosingXIncrements(latLng, 1);
 
         centerOnLocationForEtches();
         syncLoadingState();
@@ -207,6 +212,10 @@ public class GoogleMapFragment extends Fragment {
 
 
     private void refreshMap() {
+        if (mAnimatingCamera) {
+            return;
+        }
+
         mLocation = null;
 
         mEtchOverlayManager.clearEtches();
@@ -292,11 +301,18 @@ public class GoogleMapFragment extends Fragment {
             return;
         }
 
+        if (mGoogleMap.getCameraPosition().zoom < MIN_ZOOM_FOR_ETCHES) {
+            return;
+        }
+
         LatLng latLng = CoordinateUtils.toLatLng(mLocation);
         placeEtchOverlaysNearLatLng(latLng);
     }
 
     private void placeEtchOverlaysNearLatLng(LatLng latLng) {
+        if (mAnimatingCamera) {
+            throw new IllegalStateException("Can't place etches while animating.");
+        }
 
         LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
 

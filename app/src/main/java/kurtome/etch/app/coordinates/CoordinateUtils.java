@@ -130,23 +130,13 @@ public class CoordinateUtils {
         return coordinates;
     }
 
-//    public static GeoPoint getNorthWestPointStillInSameMinIncrement(GeoPoint point) {
-//        GeoPoint rounded = roundToMinIncrement(point);
-//        int degreesE6 = MIN_INCREMENT_E6 / 2;
-//        return new GeoPoint(
-//                addNorthE6(rounded.getLatitudeE6(), degreesE6),
-//                addWestE6(rounded.getLongitudeE6(), degreesE6)
-//        );
-//    }
-
     public static LatLngBounds createBoundsEnclosingXIncrements(LatLng center, int increments) {
         LatLng origin = roundToMinIncrementTowardNorthWest(center);
 
-        LatLng north = CoordinateUtils.incrementSouth(center, -increments);
-        int incrementsFullWidth = (increments) + 1; // +1 to enclose a square
-        LatLng northeast = CoordinateUtils.incrementEast(north, incrementsFullWidth);
+        LatLng north = CoordinateUtils.incrementSouth(center, -(increments+1));
+        LatLng northeast = CoordinateUtils.incrementEast(north, increments);
         LatLng south = CoordinateUtils.incrementSouth(origin, increments);
-        LatLng southwest = CoordinateUtils.incrementEast(south, -incrementsFullWidth);
+        LatLng southwest = CoordinateUtils.incrementEast(south, -(increments));
 
         return new LatLngBounds(southwest, northeast);
     }

@@ -21,18 +21,30 @@ public class ProjectionUtils {
         Point originPoint = projection.toScreenLocation(geo);
         Point eastPoint = projection.toScreenLocation(eastGeo);
         Point southPoint = projection.toScreenLocation(southGeo);
-        int x = eastPoint.x - originPoint.x;
-        int y = southPoint.y - originPoint.y;
+//        int x = eastPoint.x - originPoint.x;
+//        int y = southPoint.y - originPoint.y;
+        int x = distance(originPoint, eastPoint);
+        int y = distance(originPoint, southPoint);
         double aspectRatio = RectangleUtils.calculateAspectRatio(x, y);
         return aspectRatio;
+    }
+
+    private static int distance(Point p1, Point p2) {
+        int distance = (int) Math.sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y));
+        return distance;
+    }
+
+    private static double slope(Point p1, Point p2) {
+        double slope = ((p2.y - p1.y)*1.0) /  (p2.x - p1.x);
+        return slope;
     }
 
     public static RectangleDimensions calcProjectedSize(Projection projection, LatLngBounds latLngBounds) {
         Point originPoint = projection.toScreenLocation(CoordinateUtils.northWestCorner(latLngBounds));
         Point eastPoint = projection.toScreenLocation(latLngBounds.northeast);
         Point southPoint = projection.toScreenLocation(latLngBounds.southwest);
-        int width = eastPoint.x - originPoint.x;
-        int height = southPoint.y - originPoint.y;
+        int width = distance(originPoint, eastPoint);
+        int height = distance(originPoint, southPoint);
         return new RectangleDimensions(width, height);
     }
 
@@ -42,37 +54,11 @@ public class ProjectionUtils {
             throw new IllegalStateException("Width must be less than height.");
         }
 
-        LatLng latLngOrigin = CoordinateUtils.northWestCorner(srcBounds);
-
-        int squareProjectedSize = projectedBoundsPx.height;
-        RectangleDimensions dimens = new RectangleDimensions(
-                squareProjectedSize,
-                squareProjectedSize
-        );
-
-        LatLngBounds bounds = calcBoundsFromOriginWithProjectedDimensions(
-                projection,
-                latLngOrigin,
-                dimens
-        );
-        return bounds;
-    }
-
-    public static LatLngBounds calcBoundsFromOriginWithProjectedDimensions(
-            Projection projection,
-            LatLng origin,
-            RectangleDimensions projectedDimensions
-    ) {
-        Point projectedOrigin = projection.toScreenLocation(origin);
-        Point projectedSoutheastCorner = new Point(
-                projectedOrigin.x + projectedDimensions.width,
-                projectedOrigin.y + projectedDimensions.height
-        );
-
-        LatLng latLngSoutheast = projection.fromScreenLocation(projectedSoutheastCorner);
-
-        LatLng northeast = new LatLng(origin.latitude, latLngSoutheast.longitude);
-        LatLng southwest = new LatLng(latLngSoutheast.latitude, origin.longitude);
+        double aspectRatio = RectangleUtils.calculateAspectRatio(projectedBoundsPx);
+        double longitudeDegrees = CoordinateUtils.calculateLongitudeDegrees(srcBounds);
+        LatLng origin = CoordinateUtils.northWestCorner(srcBounds);
+        LatLng northeast = CoordinateUtils.moveEast(origin, (longitudeDegrees / aspectRatio));
+        LatLng southwest = srcBounds.southwest;
         LatLngBounds bounds = new LatLngBounds(southwest, northeast);
         return bounds;
     }

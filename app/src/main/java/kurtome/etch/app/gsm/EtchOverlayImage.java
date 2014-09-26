@@ -35,6 +35,7 @@ public class EtchOverlayImage {
 
     private final int mStatusIconSize;
     private final Point mStatusIconOffset;
+    private boolean mLoading;
 
     /**
      * Currently assumes this is a power of two so it can be used for the sample size
@@ -74,12 +75,13 @@ public class EtchOverlayImage {
         );
 
 
-        mStatusIconSize = mEtchSize.width / 3;
+        mStatusIconSize = mEtchSize.width / 6;
 
-        mStatusIconOffset = new Point(
-                (mEtchSize.width - mStatusIconSize) / 2,
-                (mEtchSize.height - mStatusIconSize) / 2
-        );
+//        mStatusIconOffset = new Point(
+//                (mEtchSize.width - mStatusIconSize) / 2,
+//                (mEtchSize.height - mStatusIconSize) / 2
+//        );
+        mStatusIconOffset = new Point(10, 10);
 
     }
 
@@ -101,6 +103,11 @@ public class EtchOverlayImage {
     }
 
     public void fetchEtch() {
+        mLoading = true;
+
+        Bitmap bitmap = createScaledEtchBitmap(Optional.<Bitmap>absent(), getStatusIconBitmap(), ETCH_MAP_HEIGHT_PX);
+        setGroundOverlayImage(bitmap);
+
         mMapFragment.spiceManager.execute(new GetEtchRequest(mEtchCoordinates), new RequestListener<Etch>() {
             @Override
             public void onRequestFailure(SpiceException e) {
@@ -111,8 +118,7 @@ public class EtchOverlayImage {
                 onFinishedLoading();
 
                 Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
-                Bitmap scaledBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
-                Bitmap overlayBitmap = drawIconOverlay(scaledBitmap);
+                Bitmap overlayBitmap = createScaledEtchBitmap(Optional.<Bitmap>absent(), Optional.of(alertBmp), ETCH_MAP_HEIGHT_PX);
 
                 setGroundOverlayImage(overlayBitmap);
             }
@@ -138,6 +144,7 @@ public class EtchOverlayImage {
                             .image(BitmapDescriptorFactory.fromBitmap(bitmap))
                             .positionFromBounds(mOverlayBounds)
                             .anchor(0, 0)
+                            .bearing(0)
             );
         }
         else {
@@ -148,6 +155,7 @@ public class EtchOverlayImage {
     }
 
     private void onFinishedLoading() {
+        mLoading = false;
         if (mFinishedLoadingRunnable != null) {
             mFinishedLoadingRunnable.run();
         }
@@ -160,54 +168,88 @@ public class EtchOverlayImage {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inSampleSize = ETCH_OVERLAY_DENSITY_RATIO;
                 int offset = 0;
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes.get(), offset, bytes.get().length, options);
-                return createScaledEtchBitmap(bitmap, ETCH_MAP_HEIGHT_PX);
+                Bitmap etchBitmap = BitmapFactory.decodeByteArray(bytes.get(), offset, bytes.get().length, options);
+                Bitmap scaledEtchBitmap = createScaledEtchBitmap(Optional.of(etchBitmap), getStatusIconBitmap(), ETCH_MAP_HEIGHT_PX);
+                return scaledEtchBitmap;
             }
             else {
                 Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
-                Bitmap scaledBitmap = Bitmap.createScaledBitmap(alertBmp, mStatusIconSize, mStatusIconSize, false);
-                return drawIconOverlay(scaledBitmap);
+                return createScaledEtchBitmap(Optional.<Bitmap>absent(), Optional.of(alertBmp), ETCH_MAP_HEIGHT_PX);
             }
         }
         else {
-            return drawEmptyEtch();
+            return createScaledEtchBitmap(Optional.<Bitmap>absent(), getStatusIconBitmap(), ETCH_MAP_HEIGHT_PX);
         }
     }
 
-    private Bitmap drawIconOverlay(Bitmap iconBitmap) {
-        Bitmap bitmap = Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas.drawPaint(mOverlayPaint);
-        canvas.drawBitmap(iconBitmap, mStatusIconOffset.x, mStatusIconOffset.y, DrawingBrush.BASIC_PAINT);
-        drawBorder(canvas);
-        return bitmap;
+    private Bitmap scaleStatusIcon(Bitmap iconBitmap) {
+        return Bitmap.createScaledBitmap(iconBitmap, mStatusIconSize, mStatusIconSize, false);
     }
+
+
+//    private Bitmap getBitmapWithIcon(Bitmap iconBitmap, Optional<Bitmap> etchBitmap) {
+//        Bitmap bitmap = Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
+//        Canvas canvas = new Canvas(bitmap);
+//        Bitmap scaledBitmap = scaleStatusIcon(iconBitmap);
+//        drawStatusIconToCanvas(canvas, scaledBitmap);
+//        drawBorder(canvas);
+//        return bitmap;
+//    }
+
+    private void drawStatusIconToCanvas(Canvas canvas, Bitmap iconBitmap) {
+        Bitmap scaledBitmap = scaleStatusIcon(iconBitmap);
+        canvas.drawRect(
+                new Rect(mStatusIconOffset.x, mStatusIconOffset.y, mStatusIconOffset.x + mStatusIconSize, mStatusIconOffset.y + mStatusIconSize),
+                mOverlayPaint
+        );
+        canvas.drawBitmap(scaledBitmap, mStatusIconOffset.x, mStatusIconOffset.y, DrawingBrush.BASIC_PAINT);
+    }
+
 
     private Bitmap createOverlayBitmap() {
         return Bitmap.createBitmap(mOverlayBitmapWidth, mOverlayBitmapHeight, Bitmap.Config.ARGB_8888);
     }
 
-    private Bitmap drawEmptyEtch() {
-        Bitmap bitmap = createOverlayBitmap();
-        Canvas canvas = new Canvas(bitmap);
-        drawBorder(canvas);
-        return bitmap;
-    }
+//    private Bitmap drawEmptyEtch() {
+//        Bitmap bitmap = createOverlayBitmap();
+//        Canvas canvas = new Canvas(bitmap);
+//        drawBorder(canvas);
+//        return bitmap;
+//    }
 
-    public Bitmap createScaledEtchBitmap(Bitmap bitmap, int srcHeight) {
+    public Bitmap createScaledEtchBitmap(Optional<Bitmap> bitmap, Optional<Bitmap> statusBitmap, int srcHeight) {
         Bitmap etchBitmap = createOverlayBitmap();
         Canvas canvas = new Canvas(etchBitmap);
 
+        if (statusBitmap.isPresent()) {
+            drawStatusIconToCanvas(canvas, statusBitmap.get());
+        }
 
-        Optional<RectangleDimensions> desiredSize = calcScaleDimensions(bitmap, srcHeight);
-        CanvasUtils.drawBitmapScalingBasedOnHeightThenCropping(canvas, bitmap, desiredSize);
+        if (bitmap.isPresent()) {
+            Optional<RectangleDimensions> desiredSize = calcScaleDimensions(bitmap.get(), srcHeight);
+            CanvasUtils.drawBitmapScalingBasedOnHeightThenCropping(canvas, bitmap.get(), desiredSize);
+        }
 
         drawBorder(canvas);
         return etchBitmap;
     }
 
+    public Optional<Bitmap> getStatusIconBitmap() {
+        if (mLoading) {
+            Bitmap editBitmap = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.ic_action_file_download);
+            return Optional.of(editBitmap);
+        }
+
+        if (mEditable) {
+            Bitmap editBitmap = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.ic_action_create);
+            return Optional.of(editBitmap);
+        }
+
+        return Optional.absent();
+    }
+
     public void setEtchBitmap(Bitmap bitmap) {
-        Bitmap bitmapToDraw = createScaledEtchBitmap(bitmap, bitmap.getHeight());
+        Bitmap bitmapToDraw = createScaledEtchBitmap(Optional.of(bitmap), getStatusIconBitmap(), bitmap.getHeight());
 
         setGroundOverlayImage(bitmapToDraw);
     }
