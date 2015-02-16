@@ -4,13 +4,17 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
+import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
@@ -20,10 +24,12 @@ import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
 import kurtome.etch.app.gsm.EtchOverlayImage;
 import kurtome.etch.app.gsm.MapLocationSelectedEvent;
+import kurtome.etch.app.gsm.MapModeChangedEvent;
 import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
 import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.ViewUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +38,9 @@ import javax.inject.Inject;
 public class DrawingFragment extends Fragment {
 
     private static final Logger logger = LoggerFactory.getLogger(DrawingFragment.class);
+    public static final String BRUSH_MODE = "brush-mode";
+    public static final String BRUSH_STROKE_WIDTH = "brush-stroke-width";
+    public static final String BRUSH_COLOR = "brush-color";
 
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
@@ -49,9 +58,11 @@ public class DrawingFragment extends Fragment {
     private static final String COLOR_PICKER_FRAGMENT_TAG = "COLOR_PICKER_FRAGMENT_TAG";
 
     @Inject SpiceManager spiceManager;
+    @Inject Bus mEventBus;
 
     private boolean mReadyToSave;
     private ActionBar mActionBar;
+    private MapModeChangedEvent.Mode mMapMode = MapModeChangedEvent.Mode.MAP;
 
     @Override
     public void onStart() {
@@ -95,8 +106,6 @@ public class DrawingFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
-
-
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.drawing, menu);
@@ -121,33 +130,62 @@ public class DrawingFragment extends Fragment {
         mCoordinates = event.getCoordinates();
         mEtchOverlayItem = event.getEtchOverlayItem();
         mEtchAspectRatio = event.getEtchAspectRatio();
+
+    }
+
+    @Subscribe
+    public void handleMapModeChanged(MapModeChangedEvent event) {
+        mMapMode = event.mode;
+        updateVisibility();
+    }
+
+    private void updateVisibility() {
+        // Should be invisible until the map finishes transitioning completely
+        if (this.getView() != null) {
+            if (mMapMode == MapModeChangedEvent.Mode.DRAWING) {
+                mEtchOverlayItem.hideFromMap();
+                mDrawingView.updateScaleAndPosition();
+                this.getView().setVisibility(View.VISIBLE);
+            }
+            else {
+                this.getView().setVisibility(View.INVISIBLE);
+            }
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         ObjectGraphUtils.inject(this);
+        mEventBus.register(this);
 
         if (mEtchOverlayItem == null) {
             throw new RuntimeException("Can't setup without etch data.");
         }
 
         View rootView = inflater.inflate(R.layout.drawing_layout, container, false);
-
+        rootView.setVisibility(View.INVISIBLE);
 
         mDrawingView = ViewUtils.subViewById(rootView, R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
+        SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        mDrawingBrush.setColor(prefs.getInt(BRUSH_COLOR, mDrawingBrush.getColor()));
+        mDrawingBrush.setStrokeWidth(prefs.getFloat(BRUSH_STROKE_WIDTH, mDrawingBrush.getStrokeWidth()));
+        for (PorterDuff.Mode mode : PorterDuff.Mode.values()) {
+            String name = prefs.getString(BRUSH_MODE, mDrawingBrush.getMode().name());
+            if (StringUtils.equals(mode.name(), name)) {
+                mDrawingBrush.setMode(mode);
+                break;
+            }
+        }
+
+        mDrawingView.setupFromEtch(mEtchOverlayItem);
 
         mLoadingLayout = ViewUtils.subViewById(rootView, R.id.drawing_loader_overlay);
         mLoadingAlertImage = ViewUtils.subViewById(rootView, R.id.drawing_loader_alert_img);
         mLoadingProgress = ViewUtils.subViewById(rootView, R.id.drawing_loader_progress);
 
         logger.debug("onCreateView {}", (spiceManager != null));
-
-
-        mDrawingView.setEtchAspectRatio(mEtchAspectRatio);
-        String text = String.format("latitude: %s, longitude %s", format(mCoordinates.getLatitudeE6()), format(mCoordinates.getLongitudeE6()));
-
 
         mColorSwatchButton = ViewUtils.subViewById(rootView, R.id.color_swatch_action_btn);
         mColorSwatchButton.setColor(mDrawingBrush.getColor());
@@ -210,11 +248,20 @@ public class DrawingFragment extends Fragment {
     }
 
     private void syncBrushChanges() {
+        SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
+
+        prefs.edit()
+                .putInt(BRUSH_COLOR, mDrawingBrush.getColor())
+                .putFloat(BRUSH_STROKE_WIDTH, mDrawingBrush.getStrokeWidth())
+                .putString(BRUSH_MODE, mDrawingBrush.getMode().name())
+                .apply();
+
         mColorSwatchButton.setColor(mDrawingBrush.getColor());
     }
 
     @Override
     public void onDestroy() {
+        mEventBus.unregister(this);
         super.onDestroy();
     }
 
@@ -297,7 +344,7 @@ public class DrawingFragment extends Fragment {
                 logger.debug("Saved etch {}.", saveEtchCommand);
                 mEtchOverlayItem.setEtchBitmap(currentBitmap);
                 endLoading();
-                mMainActivity.popToMap();
+                mEventBus.post(new DoneDrawingCommand());
             }
         });
     }
@@ -310,4 +357,5 @@ public class DrawingFragment extends Fragment {
         }
         return s.substring(0, decimalPlace) + "." + s.substring(decimalPlace);
     }
+
 }

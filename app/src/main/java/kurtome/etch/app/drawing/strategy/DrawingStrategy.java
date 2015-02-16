@@ -3,6 +3,7 @@ package kurtome.etch.app.drawing.strategy;
 import android.graphics.Canvas;
 import android.view.MotionEvent;
 import kurtome.etch.app.drawing.DrawingBrush;
+import kurtome.etch.app.drawing.ScrollInfo;
 
 public interface DrawingStrategy {
 
@@ -21,4 +22,6 @@ public interface DrawingStrategy {
     void flush();
 
     void forceStartDrawing();
+
+    void setScrollInfo(ScrollInfo scrollInfo);
 }

@@ -1,10 +1,12 @@
 package kurtome.etch.app.drawing.strategy;
 
+import android.content.Context;
 import android.graphics.*;
 import android.view.MotionEvent;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import kurtome.etch.app.R;
 import kurtome.etch.app.colorpickerview.drawable.AlphaPatternDrawable;
 import kurtome.etch.app.drawing.CanvasUtils;
 import kurtome.etch.app.drawing.DrawingBrush;
@@ -58,7 +60,7 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
     private final Bitmap mAlphaPatternBitmap;
     private final Paint mBackgroundPaint = DrawingBrush.createBasicPaint();
 
-    public SecondBitmapDrawingStrategy(Canvas drawCanvas, Bitmap canvasBitmap, DrawingBrush drawingBrush) {
+    public SecondBitmapDrawingStrategy(Context context, Canvas drawCanvas, Bitmap canvasBitmap, DrawingBrush drawingBrush) {
         this.mDrawCanvas = drawCanvas;
         this.mCanvasBitmap = canvasBitmap;
 
@@ -71,6 +73,8 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
         mCurrentBrush = drawingBrush;
         mBackgroundPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
+        mBackgroundPaint.setColor(context.getResources().getColor(R.color.dark_contrast));
+        mBackgroundPaint.setAlpha(210);
 
         int alphaRectSizePx = 20;
         mAlphaPatternBitmap = AlphaPatternDrawable.createPatternBitmap(mSecondBitmap.getWidth(), mSecondBitmap.getHeight(), alphaRectSizePx);
@@ -89,9 +93,17 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
             mSecondCanvas.drawPath(mDrawPath, mCurrentBrush.getPaint());
         }
         // This must be last to not change how the blending of the path and current etch look
-        mSecondCanvas.drawBitmap(mAlphaPatternBitmap, 0, 0, mBackgroundPaint);
+//        mSecondCanvas.drawBitmap(mAlphaPatternBitmap, 0, 0, mBackgroundPaint);
 
-        mScrollCanvas.drawColor(Color.GRAY); // clear to a solid background color
+        //mScrollCanvas.drawColor(Color.GRAY); // clear to a solid background color
+        CanvasUtils.clearCanvas(mScrollCanvas);
+        mScrollCanvas.drawPaint(mBackgroundPaint);
+        CanvasUtils.clearRect(mScrollCanvas, new RectF(
+                mScroll.x,
+                mScroll.y,
+                mScroll.x + mCanvasBitmap.getWidth(),
+                mScroll.y + mCanvasBitmap.getHeight()
+        ));
         mScrollCanvas.drawBitmap(mSecondBitmap, mScroll.x, mScroll.y, DrawingBrush.BASIC_PAINT);
 
         canvas.drawBitmap(mScrollBitmap, 0, 0, DrawingBrush.BASIC_PAINT);
@@ -186,15 +198,15 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
         this.mScrollBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         this.mScrollCanvas = new Canvas(mScrollBitmap);
 
-        int extraWidth = width - mCanvasBitmap.getWidth();
-        if (extraWidth > 0) {
-            this.mScroll.x = extraWidth / 2;
-        }
-
-        int extraHeight = height - mCanvasBitmap.getHeight();
-        if (extraHeight > 0) {
-            this.mScroll.y = extraHeight / 2;
-        }
+//        int extraWidth = width - mCanvasBitmap.getWidth();
+//        if (extraWidth > 0) {
+//            this.mScroll.x = extraWidth / 2;
+//        }
+//
+//        int extraHeight = height - mCanvasBitmap.getHeight();
+//        if (extraHeight > 0) {
+//            this.mScroll.y = extraHeight / 2;
+//        }
     }
 
     @Override

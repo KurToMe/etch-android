@@ -3,19 +3,21 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFFFFF"
+        android:background="#00FFFFFF"
         android:orientation="vertical"
         tools:context=".MainActivity">
 
     <RelativeLayout android:layout_width="match_parent"
                     android:layout_height="0dp"
+                    android:background="#00FFFFFF"
                     android:layout_weight="1" >
 
         <kurtome.etch.app.drawing.DrawingView
                 android:id="@+id/drawing"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
-                android:layout_margin="4dp"
+                android:background="#00FFFFFF"
+                android:layout_margin="0dp"
                 android:alpha="1" />
 
         <kurtome.etch.app.view.OverlayRelativeLayout

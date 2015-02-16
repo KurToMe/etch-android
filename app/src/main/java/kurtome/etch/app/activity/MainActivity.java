@@ -12,6 +12,7 @@ import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
+import kurtome.etch.app.drawing.DoneDrawingCommand;
 import kurtome.etch.app.drawing.DrawingFragment;
 import kurtome.etch.app.gsm.GoogleMapFragment;
 import kurtome.etch.app.gsm.MapLocationSelectedEvent;
@@ -21,10 +22,9 @@ import javax.inject.Inject;
 
 
 public class MainActivity extends Activity {
+    public static final String PREFS_NAME = "etch-prefs";
 
     private static final Logger logger = LoggerManager.getLogger();
-
-    private LocationProducer mLocationProducer;
 
     @Inject Bus mEventBus;
 
@@ -41,19 +41,25 @@ public class MainActivity extends Activity {
         ObjectGraphUtils.inject(this);
         mEventBus.register(this);
 
-        mLocationProducer = new LocationProducer(this);
-
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        getFragmentManager().addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                if (getFragmentManager().findFragmentByTag(DRAWING_FRAGMENT_TAG) == null) {
+                    mEventBus.post(new DoneDrawingCommand());
+                }
+            }
+        });
+
 
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
                     .add(R.id.container, mMapFragment)
                     .commit();
         }
-
-        mLocationProducer.refreshLocation();
 
         ActionBar actionBar = getActionBar();
         actionBar.setDisplayShowTitleEnabled(false);
@@ -76,7 +82,6 @@ public class MainActivity extends Activity {
         // Unregister everything so there are no memory leaks
         //  and to ensure only one of everything is registered
         mEventBus.unregister(this);
-        mLocationProducer.onDestroy();
     }
 
     private boolean isFragmentVisible(String tag) {
@@ -98,9 +103,9 @@ public class MainActivity extends Activity {
         fragment.setEtchData(event);
 
         getFragmentManager().beginTransaction()
-                .setCustomAnimations(R.animator.enter_slide_up, R.animator.fade_out, R.animator.fade_in, R.animator.exit_slide_down)
+//                .setCustomAnimations(R.animator.fade_in, 0, R.animator.fade_in, 0)
                 .add(R.id.container, fragment, DRAWING_FRAGMENT_TAG)
-                .hide(mMapFragment)
+//                .hide(mMapFragment)
                 .addToBackStack(DRAWING_ADDED_BACKSTACK)
                 .commit()
         ;
@@ -112,10 +117,11 @@ public class MainActivity extends Activity {
     }
 
     public void popToMap() {
-        getFragmentManager().popBackStack(DRAWING_ADDED_BACKSTACK, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        getFragmentManager().popBackStack(
+                DRAWING_ADDED_BACKSTACK,
+                FragmentManager.POP_BACK_STACK_INCLUSIVE
+        );
     }
-
-
 
 
 //    @Override
@@ -137,5 +143,10 @@ public class MainActivity extends Activity {
 //        return super.onOptionsItemSelected(item);
 //    }
 
+
+    @Subscribe
+    public void handleDrawingComplete(DoneDrawingCommand cmd) {
+        this.popToMap();
+    }
 
 }

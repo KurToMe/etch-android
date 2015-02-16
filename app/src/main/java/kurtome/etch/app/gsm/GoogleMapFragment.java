@@ -2,6 +2,7 @@ package kurtome.etch.app.gsm;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.*;
@@ -14,9 +15,13 @@ import com.google.common.base.Optional;
 import com.octo.android.robospice.SpiceManager;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Produce;
+import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
+import kurtome.etch.app.activity.MainActivity;
 import kurtome.etch.app.coordinates.CoordinateUtils;
+import kurtome.etch.app.drawing.DoneDrawingCommand;
+import kurtome.etch.app.drawing.DrawingView;
 import kurtome.etch.app.util.NumberUtils;
 import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.ViewUtils;
@@ -29,13 +34,15 @@ public class GoogleMapFragment extends Fragment {
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleMapFragment.class);
     public static final int MIN_ZOOM_FOR_ETCHES = 15;
+    public static final float DEFAULT_ZOOM = 18;
+
+    public static final String LAST_LATITUDE = "last-latitude";
+    public static final String LAST_LONGITUDE = "last-longitude";
 
     private Activity mMainActivity;
     private GoogleMap mGoogleMap;
     private MapView mGoogleMapView;
     private EtchOverlayManager mEtchOverlayManager;
-    private GroundOverlay mEtchGroundOverlay;
-    private Location mMostRecentLocaction;
     private boolean mAnimatingCamera;
 
     private View mView;
@@ -44,9 +51,11 @@ public class GoogleMapFragment extends Fragment {
     private LatLngBounds mEditableBounds;
 
     private MapLocationSelectedEvent mLastSelectedEvent;
+    private MapModeChangedEvent.Mode mCurrentMode = MapModeChangedEvent.Mode.MAP;
 
     @Inject Bus mEventBus;
     @Inject SpiceManager spiceManager;
+    private int mTransitionMillis;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -83,13 +92,31 @@ public class GoogleMapFragment extends Fragment {
         ObjectGraphUtils.inject(this);
 
         mView = inflater.inflate(R.layout.google_map_layout, container, false);
+
+        mTransitionMillis = this.getResources().getInteger(R.integer.mode_transition_millis);
+
         mGoogleMapView = ViewUtils.subViewById(mView, R.id.google_map_view);
         mGoogleMapView.onCreate(savedInstanceState);
         mGoogleMap = mGoogleMapView.getMap();
 
+        SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        if (prefs.contains(LAST_LATITUDE)) {
+            float latitude = prefs.getFloat(LAST_LATITUDE, 0f);
+            float longitude = prefs.getFloat(LAST_LONGITUDE, 0f);
+
+            float newZoom = DEFAULT_ZOOM;
+            LatLng center = new LatLng(latitude, longitude);
+            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, newZoom);
+
+            mGoogleMap.animateCamera(update);
+        }
+
+
 //        mGoogleMap.setBuildingsEnabled(false);
 //        mGoogleMap.setIndoorEnabled(false);
 //        mGoogleMap.getUiSettings().set(false);
+        mGoogleMap.getUiSettings().setCompassEnabled(true);
+        mGoogleMap.getUiSettings().setZoomControlsEnabled(true);
 
         mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
@@ -108,7 +135,6 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
-                mMostRecentLocaction = location;
                 if (mLocation == null) {
                     useLocation(location);
                 }
@@ -160,16 +186,67 @@ public class GoogleMapFragment extends Fragment {
         }
     }
 
-    private void goToSelectedEtch(EtchOverlayImage etchItem) {
+    private void goToSelectedEtch(final EtchOverlayImage etchItem) {
+        int paddingPx = 0;
+        CameraUpdate update = CameraUpdateFactory.newLatLngBounds(
+                etchItem.getEtchBounds(),
+                DrawingView.IMAGE_HEIGHT_PIXELS,
+                DrawingView.IMAGE_HEIGHT_PIXELS,
+                paddingPx
+        );
+
         mLastSelectedEvent = new MapLocationSelectedEvent();
         mLastSelectedEvent.setEtchOverlayImage(etchItem);
         mEventBus.post(mLastSelectedEvent);
+
+        toggleMapControls(false);
+
+        mGoogleMap.animateCamera(update, mTransitionMillis, new GoogleMap.CancelableCallback() {
+            @Override
+            public void onFinish() {
+                goToDrawingMode(etchItem);
+            }
+
+            @Override
+            public void onCancel() {
+                goToDrawingMode(etchItem);
+            }
+        });
+
+    }
+
+    private void goToDrawingMode(EtchOverlayImage etchItem) {
+        toggleMapControls(false);
+
+        mCurrentMode = MapModeChangedEvent.Mode.DRAWING;
+        mEventBus.post(new MapModeChangedEvent(mCurrentMode));
+    }
+
+    private void leaveDrawingMode() {
+        mCurrentMode = MapModeChangedEvent.Mode.MAP;
+        toggleMapControls(true);
+    }
+
+    private void toggleMapControls(boolean b) {
+        setHasOptionsMenu(b);
+        mGoogleMap.getUiSettings().setAllGesturesEnabled(b);
+        mGoogleMap.getUiSettings().setCompassEnabled(b);
+        mGoogleMap.getUiSettings().setIndoorLevelPickerEnabled(b);
+        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(b);
+        mGoogleMap.getUiSettings().setZoomControlsEnabled(b);
+        mGoogleMap.setMyLocationEnabled(b);
     }
 
     private void useLocation(Location location) {
         if (mLocation != null) {
             return;
         }
+
+        SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        prefs.edit()
+                .putFloat(LAST_LATITUDE, (float) location.getLatitude())
+                .putFloat(LAST_LONGITUDE, (float) location.getLongitude())
+                .apply();
 
         mLocation = location;
 
@@ -212,21 +289,7 @@ public class GoogleMapFragment extends Fragment {
 
 
     private void refreshMap() {
-        if (mAnimatingCamera) {
-            return;
-        }
-
-        mLocation = null;
-
-        mEtchOverlayManager.clearEtches();
-
-        if (mEtchGroundOverlay != null) {
-            mEtchGroundOverlay.remove();
-            mEtchGroundOverlay = null;
-        }
-
-        mLocation = mMostRecentLocaction;
-        centerOnLocationForEtches();
+        mEtchOverlayManager.recreateExistingEtches();
 
         syncLoadingState();
     }
@@ -247,6 +310,7 @@ public class GoogleMapFragment extends Fragment {
     @Override
     public void onResume() {
         mGoogleMapView.onResume();
+        toggleMapControls(true);
         super.onResume();
     }
 
@@ -389,8 +453,33 @@ public class GoogleMapFragment extends Fragment {
     }
 
     @Produce
-    public MapLocationSelectedEvent produce() {
+    public MapModeChangedEvent produceMapModeChanged() {
+        return new MapModeChangedEvent(mCurrentMode);
+    }
+
+    @Produce
+    public MapLocationSelectedEvent produceMapLocationSelected() {
         return mLastSelectedEvent;
     }
 
+    @Subscribe
+    public void handleDrawingComplete(DoneDrawingCommand cmd) {
+        float newZoom = DEFAULT_ZOOM;
+        LatLng center = mGoogleMap.getCameraPosition().target;
+        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, newZoom);
+
+        mEtchOverlayManager.showAllEtches();
+
+        mGoogleMap.animateCamera(update, mTransitionMillis, new GoogleMap.CancelableCallback() {
+            @Override
+            public void onFinish() {
+                leaveDrawingMode();
+            }
+
+            @Override
+            public void onCancel() {
+                leaveDrawingMode();
+            }
+        });
+    }
 }

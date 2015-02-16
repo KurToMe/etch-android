@@ -61,7 +61,7 @@ public class DrawingBrush {
     }
 
 
-    public void setStrokeWidth(int newStrokeWidth) {
+    public void setStrokeWidth(float newStrokeWidth) {
         mPaint.setStrokeWidth(newStrokeWidth);
     }
 
@@ -80,6 +80,10 @@ public class DrawingBrush {
 
     public int getAlpha() {
         return mPaint.getAlpha();
+    }
+
+    public float getStrokeWidth() {
+        return mPaint.getStrokeWidth();
     }
 }
 

@@ -26,6 +26,7 @@ public class EtchOverlayImage {
     private final int mOverlayBitmapWidth;
     private final int mOverlayBitmapHeight;
     private final LatLngBounds mOverlayBounds;
+    private final LatLngBounds mEtchBounds;
     private final boolean mEditable;
     private GoogleMapFragment mMapFragment;
     private Coordinates mEtchCoordinates;
@@ -45,13 +46,16 @@ public class EtchOverlayImage {
     /**
      * Must be power of two to work well with google map
      */
-    private static final int ETCH_MAP_HEIGHT_PX = DrawingView.IMAGE_HEIGHT_PIXELS / ETCH_OVERLAY_DENSITY_RATIO;
+    private static final int ETCH_MAP_HEIGHT_PX =
+            DrawingView.IMAGE_HEIGHT_PIXELS / ETCH_OVERLAY_DENSITY_RATIO;
+
     private LatLng mOrigin;
     private boolean mReleased;
     private GroundOverlay mGroundOverlay;
     private Runnable mFinishedLoadingRunnable;
 
     public EtchOverlayImage(GoogleMapFragment mapFragment, LatLngBounds latLngBounds, boolean editable) {
+        mEtchBounds = latLngBounds;
         mOrigin = CoordinateUtils.northWestCorner(latLngBounds);
         mEditable = editable;
         mMapFragment = mapFragment;
@@ -61,11 +65,15 @@ public class EtchOverlayImage {
         mEtchCoordinates = CoordinateUtils.convert(point);
 
         int heightPx = ETCH_MAP_HEIGHT_PX;
-        mEtchAspectRatio = ProjectionUtils.calcAspectRatio(mapFragment.getMap().getProjection(), latLngBounds);
+        mEtchAspectRatio = ProjectionUtils.calcAspectRatio(
+                mapFragment.getMap().getProjection(),
+                latLngBounds
+        );
         int widthPx = RectangleUtils.calcWidthWithAspectRatio(heightPx, mEtchAspectRatio);
 
+        mOverlayBitmapHeight = ETCH_MAP_HEIGHT_PX;
+        // leaves extra width, but must be power of two so just make it square
         mOverlayBitmapWidth = ETCH_MAP_HEIGHT_PX;
-        mOverlayBitmapHeight = ETCH_MAP_HEIGHT_PX; // leaves extra width, but must be power of two so just make it square
 
         mEtchSize = new RectangleDimensions(widthPx, heightPx);
 
@@ -90,12 +98,12 @@ public class EtchOverlayImage {
     }
 
     private void drawBorder(Canvas canvas) {
+        if (!mEditable) {
+            return;
+        }
+
         Paint paint = new Paint();
         paint.setStrokeWidth(2);
-        if (!mEditable) {
-            paint.setColor(Color.GRAY);
-            paint.setAlpha(150);
-        }
         canvas.drawLine(1, 1, 1, mEtchSize.height - 1, paint); // to lower left
         canvas.drawLine(1, mEtchSize.height - 1, mEtchSize.width - 1, mEtchSize.height - 1, paint); // to lower right
         canvas.drawLine(mEtchSize.width - 1, mEtchSize.height - 1, mEtchSize.width - 1, 1, paint); // to upper right
@@ -117,8 +125,15 @@ public class EtchOverlayImage {
                 logger.error("Error getting etch for location {}.", mEtchCoordinates, e);
                 onFinishedLoading();
 
-                Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
-                Bitmap overlayBitmap = createScaledEtchBitmap(Optional.<Bitmap>absent(), Optional.of(alertBmp), ETCH_MAP_HEIGHT_PX);
+                Bitmap alertBmp = BitmapFactory.decodeResource(
+                        mMapFragment.getResources(),
+                        R.drawable.alert_icon
+                );
+                Bitmap overlayBitmap = createScaledEtchBitmap(
+                        Optional.<Bitmap>absent(),
+                        Optional.of(alertBmp),
+                        ETCH_MAP_HEIGHT_PX
+                );
 
                 setGroundOverlayImage(overlayBitmap);
             }
@@ -168,17 +183,37 @@ public class EtchOverlayImage {
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inSampleSize = ETCH_OVERLAY_DENSITY_RATIO;
                 int offset = 0;
-                Bitmap etchBitmap = BitmapFactory.decodeByteArray(bytes.get(), offset, bytes.get().length, options);
-                Bitmap scaledEtchBitmap = createScaledEtchBitmap(Optional.of(etchBitmap), getStatusIconBitmap(), ETCH_MAP_HEIGHT_PX);
+                Bitmap etchBitmap = BitmapFactory.decodeByteArray(
+                        bytes.get(),
+                        offset,
+                        bytes.get().length,
+                        options
+                );
+                Bitmap scaledEtchBitmap = createScaledEtchBitmap(
+                        Optional.of(etchBitmap),
+                        getStatusIconBitmap(),
+                        ETCH_MAP_HEIGHT_PX
+                );
                 return scaledEtchBitmap;
             }
             else {
-                Bitmap alertBmp = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.alert_icon);
-                return createScaledEtchBitmap(Optional.<Bitmap>absent(), Optional.of(alertBmp), ETCH_MAP_HEIGHT_PX);
+                Bitmap alertBmp = BitmapFactory.decodeResource(
+                        mMapFragment.getResources(),
+                        R.drawable.alert_icon
+                );
+                return createScaledEtchBitmap(
+                        Optional.<Bitmap>absent(),
+                        Optional.of(alertBmp),
+                        ETCH_MAP_HEIGHT_PX
+                );
             }
         }
         else {
-            return createScaledEtchBitmap(Optional.<Bitmap>absent(), getStatusIconBitmap(), ETCH_MAP_HEIGHT_PX);
+            return createScaledEtchBitmap(
+                    Optional.<Bitmap>absent(),
+                    getStatusIconBitmap(),
+                    ETCH_MAP_HEIGHT_PX
+            );
         }
     }
 
@@ -235,21 +270,25 @@ public class EtchOverlayImage {
     }
 
     public Optional<Bitmap> getStatusIconBitmap() {
-        if (mLoading) {
-            Bitmap editBitmap = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.ic_action_file_download);
-            return Optional.of(editBitmap);
-        }
-
-        if (mEditable) {
-            Bitmap editBitmap = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.ic_action_create);
-            return Optional.of(editBitmap);
-        }
+//        if (mLoading) {
+//            Bitmap editBitmap = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.ic_action_file_download);
+//            return Optional.of(editBitmap);
+//        }
+//
+//        if (mEditable) {
+//            Bitmap editBitmap = BitmapFactory.decodeResource(mMapFragment.getResources(), R.drawable.ic_action_create);
+//            return Optional.of(editBitmap);
+//        }
 
         return Optional.absent();
     }
 
     public void setEtchBitmap(Bitmap bitmap) {
-        Bitmap bitmapToDraw = createScaledEtchBitmap(Optional.of(bitmap), getStatusIconBitmap(), bitmap.getHeight());
+        Bitmap bitmapToDraw = createScaledEtchBitmap(
+                Optional.of(bitmap),
+                getStatusIconBitmap(),
+                bitmap.getHeight()
+        );
 
         setGroundOverlayImage(bitmapToDraw);
     }
@@ -295,7 +334,39 @@ public class EtchOverlayImage {
         mReleased = true;
     }
 
+    public void hideFromMap() {
+        mGroundOverlay.setVisible(false);
+    }
+
+    public void showOnMap() {
+        mGroundOverlay.setVisible(true);
+    }
+
     public LatLng getEtchLatLng() {
         return mOrigin;
+    }
+
+    public LatLngBounds getEtchBounds() {
+        return mEtchBounds;
+    }
+
+    public boolean isEditable() {
+        return mEditable;
+    }
+
+    public RectangleDimensions getCurrentScreenDimensions() {
+        return ProjectionUtils.calcProjectedSize(
+                mMapFragment.getMap().getProjection(),
+                mEtchBounds
+        );
+    }
+
+    public Point currentOriginPoint() {
+        return mMapFragment.getMap().getProjection().toScreenLocation(
+                mGroundOverlay.getPosition()
+        );
+//        return ProjectionUtils.calcOrigin(
+//                mEtchBounds
+//        );
     }
 }

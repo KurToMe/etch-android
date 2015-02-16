@@ -39,6 +39,11 @@ public class ProjectionUtils {
         return slope;
     }
 
+    public static Point calcOrigin(Projection projection, LatLngBounds latLngBounds) {
+        Point originPoint = projection.toScreenLocation(CoordinateUtils.northWestCorner(latLngBounds));
+        return originPoint;
+    }
+
     public static RectangleDimensions calcProjectedSize(Projection projection, LatLngBounds latLngBounds) {
         Point originPoint = projection.toScreenLocation(CoordinateUtils.northWestCorner(latLngBounds));
         Point eastPoint = projection.toScreenLocation(latLngBounds.northeast);

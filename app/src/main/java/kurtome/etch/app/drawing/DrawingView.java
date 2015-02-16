@@ -7,11 +7,14 @@ import android.view.MotionEvent;
 import android.view.View;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
+import com.squareup.otto.Bus;
 import kurtome.etch.app.drawing.scroll.ScrollStrategy;
 import kurtome.etch.app.drawing.strategy.DrawingStrategy;
 import kurtome.etch.app.drawing.strategy.SecondBitmapDrawingStrategy;
+import kurtome.etch.app.gsm.EtchOverlayImage;
 import kurtome.etch.app.util.RectangleDimensions;
 
+import javax.inject.Inject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
@@ -27,6 +30,9 @@ public class DrawingView extends View {
     private boolean mInitialized;
     private double mAspectRatio;
     private RectangleDimensions mEtchDimens;
+    private EtchOverlayImage mEtch;
+
+    @Inject Bus bus;
 
 
     private enum TouchType {
@@ -35,8 +41,8 @@ public class DrawingView extends View {
         SCROLL
     }
 
-    private DrawingStrategy mDrawingStrategy;
-    private ScrollStrategy mScrollStrategy;
+    private SecondBitmapDrawingStrategy mDrawingStrategy;
+//    private ScrollStrategy mScrollStrategy;
 
     /**
      * Some kind of crazy because too long a path causes performance issues.
@@ -59,30 +65,63 @@ public class DrawingView extends View {
         return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
     }
 
-    public void setEtchAspectRatio(double etchAspectRatio) {
+    public void setupFromEtch(EtchOverlayImage etch) {
         if (mInitialized) {
             throw new IllegalStateException("Should only initialize once.");
         }
+        mEtch = etch;
 
-        mAspectRatio = etchAspectRatio;
+        mInitialized = true;
+    }
+
+    private void setup() {
+        mAspectRatio = mEtch.getAspectRatio();
         int width = RectangleUtils.calcWidthWithAspectRatio(IMAGE_HEIGHT_PIXELS, mAspectRatio);
         mEtchDimens = new RectangleDimensions(width, IMAGE_HEIGHT_PIXELS);
         mCanvasBitmap = createBitmap(width, IMAGE_HEIGHT_PIXELS);
 
         mDrawCanvas = new Canvas(mCanvasBitmap);
 
-        SecondBitmapDrawingStrategy secondBitmapDrawingStrategy = new SecondBitmapDrawingStrategy(mDrawCanvas, mCanvasBitmap, mDrawingBrush);
-        mScrollStrategy = new ScrollStrategy(mEtchDimens.width, mEtchDimens.height);
+        mDrawingStrategy = new SecondBitmapDrawingStrategy(
+                this.getContext(),
+                mDrawCanvas,
+                mCanvasBitmap,
+                mDrawingBrush
+        );
 
-        secondBitmapDrawingStrategy.setScrollInfo(mScrollStrategy.getScrollInfo());
-        mDrawingStrategy = secondBitmapDrawingStrategy;
-        mInitialized = true;
+        updateScaleAndPosition();
+    }
+
+    public void updateScaleAndPosition() {
+        if (mDrawingStrategy == null) {
+            return;
+        }
+
+        RectangleDimensions dimensions = mEtch.getCurrentScreenDimensions();
+        float scale = ((float) dimensions.height) / IMAGE_HEIGHT_PIXELS;
+        logger.i("Scale is %s", scale);
+        Matrix matrix = new Matrix();
+        matrix.setScale(scale, scale);
+        // Not sure how scaling will effect drawing. Might not need it if etches fit on all
+        // screen sizes
+//        mDrawCanvas.setMatrix(matrix);
+
+        ScrollInfo scrollInfo = new ScrollInfo();
+        Point etchOrigin = mEtch.currentOriginPoint();
+        float x = this.getX();
+        float y = this.getY();
+        scrollInfo.x = etchOrigin.x - x;
+        scrollInfo.y = etchOrigin.y - y;
+        logger.i("Setting scroll offset to (%s, %s)", scrollInfo.x, scrollInfo.y);
+        mDrawingStrategy.setScrollInfo(scrollInfo);
     }
 
     //view assigned size
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        logger.i("Sized chaned to (%s, %s) from (%s, %s)", w, h, oldw, oldh);
         super.onSizeChanged(w, h, oldw, oldh);
+        setup();
         mDrawingStrategy.sizeChanged(w, h, oldw, oldh);
     }
 
@@ -98,45 +137,46 @@ public class DrawingView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         super.onTouchEvent(event);
 
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            // we can safely always pass the action down to
-            // the drawing because it just preps stuff
-            mDrawingStrategy.touchEvent(event);
-            mScrollStrategy.touchEvent(event);
-        }
-
-        if (mTouchType == TouchType.NONE) {
-            if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
-                mDrawingStrategy.touchEvent(event);
-                if (mDrawingStrategy.isDrawing()) {
-                    mTouchType = TouchType.DRAW;
-                }
-            }
-            else if (event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
-                mTouchType = TouchType.SCROLL;
-                mScrollStrategy.touchEvent(event);
-            }
-        }
-        else if (mTouchType == TouchType.DRAW) {
-            mDrawingStrategy.touchEvent(event);
-        }
-        else if (mTouchType == TouchType.SCROLL) {
-            mScrollStrategy.touchEvent(event);
-        }
-
-        if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-            if (mTouchType == TouchType.NONE) {
-                // If we never figured out how to handle this action,
-                // it should be drawing (let's a quick tap draw a dot)
-                mDrawingStrategy.forceStartDrawing();
-            }
-            // let drawing strategy clean-up
-            mDrawingStrategy.touchEvent(event);
-
-            mScrollStrategy.touchEvent(event);
-
-            mTouchType = TouchType.NONE;
-        }
+        mDrawingStrategy.touchEvent(event);
+//        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+//            // we can safely always pass the action down to
+//            // the drawing because it just preps stuff
+//            mDrawingStrategy.touchEvent(event);
+//            mScrollStrategy.touchEvent(event);
+//        }
+//
+//        if (mTouchType == TouchType.NONE) {
+//            if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+//                mDrawingStrategy.touchEvent(event);
+//                if (mDrawingStrategy.isDrawing()) {
+//                    mTouchType = TouchType.DRAW;
+//                }
+//            }
+//            else if (event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
+//                mTouchType = TouchType.SCROLL;
+//                mScrollStrategy.touchEvent(event);
+//            }
+//        }
+//        else if (mTouchType == TouchType.DRAW) {
+//            mDrawingStrategy.touchEvent(event);
+//        }
+//        else if (mTouchType == TouchType.SCROLL) {
+//            mScrollStrategy.touchEvent(event);
+//        }
+//
+//        if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+//            if (mTouchType == TouchType.NONE) {
+//                // If we never figured out how to handle this action,
+//                // it should be drawing (let's a quick tap draw a dot)
+//                mDrawingStrategy.forceStartDrawing();
+//            }
+//            // let drawing strategy clean-up
+//            mDrawingStrategy.touchEvent(event);
+//
+//            mScrollStrategy.touchEvent(event);
+//
+//            mTouchType = TouchType.NONE;
+//        }
 
         invalidate();
         return true;

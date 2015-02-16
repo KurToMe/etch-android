@@ -7,8 +7,19 @@ import kurtome.etch.app.util.RectangleDimensions;
 
 public class CanvasUtils {
 
+    private static final Paint transparentPaint = new Paint();
+
+    static {
+        transparentPaint.setColor(Color.TRANSPARENT);
+        transparentPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+    }
+
     public static void clearCanvas(Canvas canvas) {
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.SRC);
+        canvas.drawPaint(transparentPaint);
+    }
+
+    public static void clearRect(Canvas canvas, RectF r) {
+        canvas.drawRect(r, transparentPaint);
     }
 
     public static void drawBitmapFromGzip(Canvas canvas, byte[] gzipImage) {

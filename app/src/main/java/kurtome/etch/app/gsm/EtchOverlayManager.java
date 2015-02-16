@@ -2,6 +2,7 @@ package kurtome.etch.app.gsm;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.api.client.util.Lists;
 import com.google.api.client.util.Maps;
 import com.google.common.base.Optional;
 import kurtome.etch.app.coordinates.CoordinateUtils;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class EtchOverlayManager {
@@ -75,6 +77,7 @@ public class EtchOverlayManager {
             etchOverlayImage.forceReleaseResources();
         }
         mEtchesByLatLngId.clear();
+        mLoadingEtchesByLatLngId.clear();
     }
 
     public void setLoadingChangedRunnable(Runnable runnable) {
@@ -104,6 +107,21 @@ public class EtchOverlayManager {
                 iterator.remove();
                 mLoadingEtchesByLatLngId.remove(latLngId);
             }
+        }
+    }
+
+    public void recreateExistingEtches() {
+        List<EtchOverlayImage> etches = Lists.newArrayList(mEtchesByLatLngId.values());
+        clearEtches();
+
+        for (EtchOverlayImage etch : etches) {
+            addEtch(etch.getEtchBounds(), etch.isEditable());
+        }
+    }
+
+    public void showAllEtches() {
+        for (EtchOverlayImage etch : mEtchesByLatLngId.values()) {
+            etch.showOnMap();
         }
     }
 }
