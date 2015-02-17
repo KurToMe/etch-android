@@ -256,9 +256,9 @@ public class EtchOverlayImage {
         Bitmap etchBitmap = createOverlayBitmap();
         Canvas canvas = new Canvas(etchBitmap);
 
-        if (statusBitmap.isPresent()) {
-            drawStatusIconToCanvas(canvas, statusBitmap.get());
-        }
+//        if (statusBitmap.isPresent()) {
+//            drawStatusIconToCanvas(canvas, statusBitmap.get());
+//        }
 
         if (bitmap.isPresent()) {
             Optional<RectangleDimensions> desiredSize = calcScaleDimensions(bitmap.get(), srcHeight);

@@ -177,4 +177,8 @@ public class CoordinateUtils {
         return Math.abs(Math.abs(val1) - Math.abs(val2));
     }
 
+    public static int calculateIncrements(double degrees) {
+        int e6Degrees = toE6(degrees);
+        return e6Degrees / MIN_INCREMENT_E6;
+    }
 }

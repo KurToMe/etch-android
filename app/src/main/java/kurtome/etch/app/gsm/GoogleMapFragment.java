@@ -6,9 +6,9 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.*;
+import android.widget.Toast;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.GroundOverlay;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.common.base.Optional;
@@ -33,7 +33,7 @@ import javax.inject.Inject;
 public class GoogleMapFragment extends Fragment {
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleMapFragment.class);
-    public static final int MIN_ZOOM_FOR_ETCHES = 15;
+    public static final int MIN_ZOOM_FOR_ETCHES = 16;
     public static final float DEFAULT_ZOOM = 18;
 
     public static final String LAST_LATITUDE = "last-latitude";
@@ -56,6 +56,7 @@ public class GoogleMapFragment extends Fragment {
     @Inject Bus mEventBus;
     @Inject SpiceManager spiceManager;
     private int mTransitionMillis;
+    private boolean mZoomOutToastShown;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -99,26 +100,11 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMapView.onCreate(savedInstanceState);
         mGoogleMap = mGoogleMapView.getMap();
 
-        SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
-        if (prefs.contains(LAST_LATITUDE)) {
-            float latitude = prefs.getFloat(LAST_LATITUDE, 0f);
-            float longitude = prefs.getFloat(LAST_LONGITUDE, 0f);
-
-            float newZoom = DEFAULT_ZOOM;
-            LatLng center = new LatLng(latitude, longitude);
-            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, newZoom);
-
-            mGoogleMap.animateCamera(update);
-        }
-
-
-//        mGoogleMap.setBuildingsEnabled(false);
-//        mGoogleMap.setIndoorEnabled(false);
-//        mGoogleMap.getUiSettings().set(false);
         mGoogleMap.getUiSettings().setCompassEnabled(true);
         mGoogleMap.getUiSettings().setZoomControlsEnabled(true);
 
         mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+
             @Override
             public void onMapClick(LatLng latLng) {
                 mapClick(latLng);
@@ -152,25 +138,63 @@ public class GoogleMapFragment extends Fragment {
 
         MapsInitializer.initialize(this.getActivity());
 
+
+        SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
+        if (prefs.contains(LAST_LATITUDE)) {
+            float latitude = prefs.getFloat(LAST_LATITUDE, 0f);
+            float longitude = prefs.getFloat(LAST_LONGITUDE, 0f);
+
+            float newZoom = DEFAULT_ZOOM;
+            LatLng center = new LatLng(latitude, longitude);
+            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, newZoom);
+
+            mGoogleMap.animateCamera(update);
+        }
+
         mEventBus.register(this);
+
+        showToast("Click on etches nearby to start drawing.");
 
         return mView;
     }
 
     private void cameraChanged(CameraPosition cameraPosition) {
+        removeEtchesFarFromLatLng(cameraPosition.target);
         if (!mEtchOverlayManager.hasEtches()) {
             attemptAddOverlaysToMapBasedOnLocation();
         }
         else {
-            if (cameraPosition.zoom > MIN_ZOOM_FOR_ETCHES && !mAnimatingCamera) {
-                removeEtchesFarFromLatLng(cameraPosition.target);
-                placeEtchOverlaysNearLatLng(cameraPosition.target);
+//            if (cameraPosition.zoom < MIN_ZOOM_FOR_ETCHES) {
+//                if (!mZoomOutToastShown) {
+//                    mZoomOutToastShown = true;
+//                    String text = "Cannot display etches when zoomed out too far.";
+//                    showToast(text);
+//                }
+//                return;
+//            }
+
+            if (mAnimatingCamera) {
+                return;
             }
+            placeEtchOverlaysNearLatLng(cameraPosition.target);
         }
     }
 
+    private void showToast(String text) {
+        Toast toast = Toast.makeText(
+                getActivity(),
+                text,
+                Toast.LENGTH_LONG
+        );
+        toast.setGravity(Gravity.BOTTOM, 0, 20);
+        toast.show();
+    }
+
     private void removeEtchesFarFromLatLng(LatLng latLng) {
-        LatLngBounds bounds = CoordinateUtils.createBoundsEnclosingXIncrements(latLng, 5);
+        LatLngBounds bounds = CoordinateUtils.createBoundsEnclosingXIncrements(
+                latLng,
+                MAX_ETCH_GRID_SIZE
+        );
         mEtchOverlayManager.removeEtchesOutsideOfBounds(bounds);
     }
 
@@ -336,10 +360,12 @@ public class GoogleMapFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
+    private static final int MAX_ETCH_GRID_SIZE = 7;
+
     /**
      * Might only work with odd numbers right now, due to how we calculate offsets etc.
      */
-    private static final int ETCH_GRID_SIZE = 3;
+    private static final int MIN_ETCH_GRID_SIZE = 3;
 
     private void attemptAddOverlaysToMapBasedOnLocation() {
         if (mEtchOverlayManager.hasEtches()) {
@@ -380,7 +406,22 @@ public class GoogleMapFragment extends Fragment {
 
         LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
 
-        int initialOffset = (-ETCH_GRID_SIZE / 2);
+        LatLngBounds bounds = mGoogleMap.getProjection().getVisibleRegion().latLngBounds;
+        double latDegrees = CoordinateUtils.calculateLatitudeDegrees(bounds);
+        int increments = CoordinateUtils.calculateIncrements(latDegrees);
+        if (increments % 2 == 0) {
+            increments += 1;
+        }
+        if (increments > MAX_ETCH_GRID_SIZE) {
+            increments = MAX_ETCH_GRID_SIZE;
+        }
+        if (increments < MIN_ETCH_GRID_SIZE) {
+            increments = MIN_ETCH_GRID_SIZE;
+        }
+
+        logger.info("Using grid size of {}.", increments);
+
+        int initialOffset = (-increments / 2);
         int maxOffset = -initialOffset;
 
         for (int longOffset = initialOffset; longOffset <= maxOffset; longOffset++) {
