@@ -32,7 +32,7 @@ public class DrawingView extends View {
     private RectangleDimensions mEtchDimens;
     private EtchOverlayImage mEtch;
 
-    @Inject Bus bus;
+    private byte[] mGzipImage;
 
 
     private enum TouchType {
@@ -92,6 +92,12 @@ public class DrawingView extends View {
         updateScaleAndPosition();
     }
 
+    public void onMapFinishedChanging() {
+        setup();
+        updateScaleAndPosition();
+        ensureImageSet();
+    }
+
     public void updateScaleAndPosition() {
         if (mDrawingStrategy == null) {
             return;
@@ -114,6 +120,10 @@ public class DrawingView extends View {
         scrollInfo.y = etchOrigin.y - y;
         logger.i("Setting scroll offset to (%s, %s)", scrollInfo.x, scrollInfo.y);
         mDrawingStrategy.setScrollInfo(scrollInfo);
+        mDrawingStrategy.sizeChanged(
+                this.getWidth(), this.getHeight(),
+                this.getWidth(), this.getHeight()
+        );
     }
 
     //view assigned size
@@ -121,8 +131,9 @@ public class DrawingView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         logger.i("Sized chaned to (%s, %s) from (%s, %s)", w, h, oldw, oldh);
         super.onSizeChanged(w, h, oldw, oldh);
-        setup();
-        mDrawingStrategy.sizeChanged(w, h, oldw, oldh);
+        if (mDrawingStrategy != null) {
+            mDrawingStrategy.sizeChanged(w, h, oldw, oldh);
+        }
     }
 
     //draw view
@@ -187,6 +198,26 @@ public class DrawingView extends View {
     }
 
     public void setCurrentImage(byte[] gzipImage) {
+        synchronized (this) {
+            mGzipImage = gzipImage;
+        }
+        ensureImageSet();
+    }
+
+    private void ensureImageSet() {
+        if (mDrawCanvas == null) {
+            return;
+        }
+
+        byte[] gzipImage = null;
+        synchronized (this) {
+            gzipImage = mGzipImage;
+            mGzipImage = null;
+        }
+        if (gzipImage == null) {
+            return;
+        }
+
         CanvasUtils.clearCanvas(mDrawCanvas);
         if (gzipImage.length > 0) {
             drawEtchToCanvas(gzipImage);
@@ -221,7 +252,7 @@ public class DrawingView extends View {
         }
     }
 
-    public void undoLastDraw() {
+    public void undoLastDraw()  {
         mDrawingStrategy.undoLastDraw();
         invalidate();
     }

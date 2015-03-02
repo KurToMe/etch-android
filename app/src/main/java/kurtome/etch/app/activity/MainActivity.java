@@ -1,10 +1,11 @@
 package kurtome.etch.app.activity;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Window;
 import com.noveogroup.android.log.Logger;
 import com.noveogroup.android.log.LoggerManager;
@@ -21,7 +22,7 @@ import kurtome.etch.app.location.LocationProducer;
 import javax.inject.Inject;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends ActionBarActivity {
     public static final String PREFS_NAME = "etch-prefs";
 
     private static final Logger logger = LoggerManager.getLogger();
@@ -36,7 +37,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        supportRequestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
         ObjectGraphUtils.inject(this);
         mEventBus.register(this);
@@ -61,9 +62,8 @@ public class MainActivity extends Activity {
                     .commit();
         }
 
-        ActionBar actionBar = getActionBar();
+        ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayShowTitleEnabled(false);
-
     }
 
     @Override

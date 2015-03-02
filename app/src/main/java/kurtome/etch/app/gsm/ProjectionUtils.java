@@ -53,6 +53,14 @@ public class ProjectionUtils {
         return new RectangleDimensions(width, height);
     }
 
+    public static boolean isComputableInCurrentView(Projection projection, LatLngBounds srcBounds) {
+        RectangleDimensions projectedBoundsPx = calcProjectedSize(projection, srcBounds);
+        if (projectedBoundsPx.width > projectedBoundsPx.height) {
+            return false;
+        }
+        return true;
+    }
+
     public static LatLngBounds extendWidthToCreateSquareBounds(Projection projection, LatLngBounds srcBounds) {
         RectangleDimensions projectedBoundsPx = calcProjectedSize(projection, srcBounds);
         if (projectedBoundsPx.width > projectedBoundsPx.height) {

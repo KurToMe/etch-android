@@ -28,7 +28,7 @@
 
     <item name="android:spinnerStyle">@style/SpinnerAppTheme</item>
 
-    <item name="android:progressBarStyleHorizontal">@style/ProgressBarAppTheme</item>
+    <!--<item name="android:progressBarStyleHorizontal">@style/ProgressBarAppTheme</item>-->
 
     <item name="android:seekBarStyle">@style/SeekBarAppTheme</item>
 

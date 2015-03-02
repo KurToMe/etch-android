@@ -19,7 +19,7 @@
 
 <resources>
 
-    <style name="Theme.Etch1" parent="@android:style/Theme.Holo.Light">
+    <style name="Theme.Etch1" parent="@style/Theme.AppCompat.Light">
         <item name="android:actionBarItemBackground">@drawable/selectable_background_etch1</item>
         <item name="android:popupMenuStyle">@style/PopupMenu.Etch1</item>
         <item name="android:dropDownListViewStyle">@style/DropDownListView.Etch1</item>
@@ -37,12 +37,12 @@
         <item name="android:background">@drawable/ab_solid_etch1</item>
         <item name="android:backgroundStacked">@drawable/ab_stacked_solid_etch1</item>
         <item name="android:backgroundSplit">@drawable/ab_bottom_solid_etch1</item>
-        <item name="android:progressBarStyle">@style/ProgressBar.Etch1</item>
+        <!--<item name="android:progressBarStyle">@style/ProgressBar.Etch1</item>-->
     </style>
 
     <style name="ActionBar.Transparent.Etch1" parent="@android:style/Widget.Holo.Light.ActionBar">
         <item name="android:background">@drawable/ab_transparent_etch1</item>
-        <item name="android:progressBarStyle">@style/ProgressBar.Etch1</item>
+        <!--<item name="android:progressBarStyle">@style/ProgressBar.Etch1</item>-->
     </style>
 
     <style name="PopupMenu.Etch1" parent="@android:style/Widget.Holo.Light.ListPopupWindow">
@@ -63,9 +63,9 @@
         <item name="android:dropDownSelector">@drawable/selectable_background_etch1</item>
     </style>
     
-    <style name="ProgressBar.Etch1" parent="@android:style/Widget.Holo.Light.ProgressBar.Horizontal">
-        <item name="android:progressDrawable">@drawable/progress_horizontal_etch1</item>
-    </style>
+    <!--<style name="ProgressBar.Etch1" parent="@android:style/Widget.Holo.Light.ProgressBar.Horizontal">-->
+        <!--<item name="android:progressDrawable">@drawable/progress_horizontal_etch1</item>-->
+    <!--</style>-->
     
     <style name="ActionButton.CloseMode.Etch1" parent="@android:style/Widget.Holo.Light.ActionButton.CloseMode">
         <item name="android:background">@drawable/btn_cab_done_etch1</item>

@@ -41,7 +41,7 @@ public class CanvasUtils {
 
     /**
      * @param desiredSize Scales the incoming bitmap so it's height matches incoming height.
-     *                  Aspect ratio of the original bitmap is maintained
+     *                    Aspect ratio of the original bitmap is maintained
      */
     public static void drawBitmapScalingBasedOnHeightThenCropping(Canvas canvas, Bitmap bitmap, Optional<RectangleDimensions> desiredSize) {
         if (desiredSize.isPresent()) {
@@ -51,9 +51,29 @@ public class CanvasUtils {
                     finalHeight
             );
             Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
-            if (desiredSize.isPresent()) {
-               scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, desiredSize.get().width, desiredSize.get().height);
-            }
+            if (finalWidth != desiredSize.get().width)
+            scaledBitmap = Bitmap.createBitmap(
+                    scaledBitmap,
+                    0,
+                    0,
+                    desiredSize.get().width,
+                    desiredSize.get().height
+            );
+            drawBitmap(canvas, scaledBitmap);
+        }
+        else {
+            drawBitmap(canvas, bitmap);
+        }
+    }
+
+    public static void drawBitmapScaledBitmap(Canvas canvas, Bitmap bitmap, Optional<RectangleDimensions> desiredSize) {
+        if (desiredSize.isPresent()) {
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+                    bitmap,
+                    desiredSize.get().width,
+                    desiredSize.get().height,
+                    false
+            );
             drawBitmap(canvas, scaledBitmap);
         }
         else {

@@ -1,6 +1,5 @@
 package kurtome.etch.app.drawing;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.DialogInterface;
@@ -8,8 +7,10 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.view.*;
 import android.widget.*;
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
@@ -38,14 +39,12 @@ import javax.inject.Inject;
 public class DrawingFragment extends Fragment {
 
     private static final Logger logger = LoggerFactory.getLogger(DrawingFragment.class);
-    public static final String BRUSH_MODE = "brush-mode";
     public static final String BRUSH_STROKE_WIDTH = "brush-stroke-width";
     public static final String BRUSH_COLOR = "brush-color";
 
     private DrawingView mDrawingView;
     private DrawingBrush mDrawingBrush;
     private Coordinates mCoordinates;
-    private double mEtchAspectRatio;
     private EtchOverlayImage mEtchOverlayItem;
     private RelativeLayout mLoadingLayout;
     private ImageView mLoadingAlertImage;
@@ -87,7 +86,7 @@ public class DrawingFragment extends Fragment {
 //        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
 //                View.SYSTEM_UI_FLAG_LOW_PROFILE
 //        );
-        mActionBar = mMainActivity.getActionBar();
+        mActionBar = mMainActivity.getSupportActionBar();
         mActionBar.setDisplayHomeAsUpEnabled(true);
     }
 
@@ -129,13 +128,15 @@ public class DrawingFragment extends Fragment {
 
         mCoordinates = event.getCoordinates();
         mEtchOverlayItem = event.getEtchOverlayItem();
-        mEtchAspectRatio = event.getEtchAspectRatio();
-
     }
 
     @Subscribe
     public void handleMapModeChanged(MapModeChangedEvent event) {
         mMapMode = event.mode;
+
+        if (mMapMode == MapModeChangedEvent.Mode.DRAWING) {
+            mEtchOverlayItem.getAspectRatio();
+        }
         updateVisibility();
     }
 
@@ -144,7 +145,7 @@ public class DrawingFragment extends Fragment {
         if (this.getView() != null) {
             if (mMapMode == MapModeChangedEvent.Mode.DRAWING) {
                 mEtchOverlayItem.hideFromMap();
-                mDrawingView.updateScaleAndPosition();
+                mDrawingView.onMapFinishedChanging();
                 this.getView().setVisibility(View.VISIBLE);
             }
             else {
@@ -170,14 +171,8 @@ public class DrawingFragment extends Fragment {
         mDrawingBrush = mDrawingView.getDrawingBrush();
         SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
         mDrawingBrush.setColor(prefs.getInt(BRUSH_COLOR, mDrawingBrush.getColor()));
+        mDrawingBrush.setAlpha(255); // don't start with see through color ever
         mDrawingBrush.setStrokeWidth(prefs.getFloat(BRUSH_STROKE_WIDTH, mDrawingBrush.getStrokeWidth()));
-        for (PorterDuff.Mode mode : PorterDuff.Mode.values()) {
-            String name = prefs.getString(BRUSH_MODE, mDrawingBrush.getMode().name());
-            if (StringUtils.equals(mode.name(), name)) {
-                mDrawingBrush.setMode(mode);
-                break;
-            }
-        }
 
         mDrawingView.setupFromEtch(mEtchOverlayItem);
 
@@ -186,6 +181,7 @@ public class DrawingFragment extends Fragment {
         mLoadingProgress = ViewUtils.subViewById(rootView, R.id.drawing_loader_progress);
 
         logger.debug("onCreateView {}", (spiceManager != null));
+
 
         mColorSwatchButton = ViewUtils.subViewById(rootView, R.id.color_swatch_action_btn);
         mColorSwatchButton.setColor(mDrawingBrush.getColor());
@@ -253,7 +249,6 @@ public class DrawingFragment extends Fragment {
         prefs.edit()
                 .putInt(BRUSH_COLOR, mDrawingBrush.getColor())
                 .putFloat(BRUSH_STROKE_WIDTH, mDrawingBrush.getStrokeWidth())
-                .putString(BRUSH_MODE, mDrawingBrush.getMode().name())
                 .apply();
 
         mColorSwatchButton.setColor(mDrawingBrush.getColor());

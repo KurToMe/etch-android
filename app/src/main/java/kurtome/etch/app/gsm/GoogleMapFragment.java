@@ -5,8 +5,12 @@ import android.app.Fragment;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v7.app.ActionBarActivity;
 import android.view.*;
 import android.widget.Toast;
+import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.google.android.gms.internal.jx;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -33,13 +37,13 @@ import javax.inject.Inject;
 public class GoogleMapFragment extends Fragment {
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleMapFragment.class);
-    public static final int MIN_ZOOM_FOR_ETCHES = 16;
+    public static final int MIN_ZOOM_FOR_ETCHES = 15;
     public static final float DEFAULT_ZOOM = 18;
 
     public static final String LAST_LATITUDE = "last-latitude";
     public static final String LAST_LONGITUDE = "last-longitude";
 
-    private Activity mMainActivity;
+    private ActionBarActivity mMainActivity;
     private GoogleMap mGoogleMap;
     private MapView mGoogleMapView;
     private EtchOverlayManager mEtchOverlayManager;
@@ -48,7 +52,6 @@ public class GoogleMapFragment extends Fragment {
     private View mView;
 
     private Location mLocation;
-    private LatLngBounds mEditableBounds;
 
     private MapLocationSelectedEvent mLastSelectedEvent;
     private MapModeChangedEvent.Mode mCurrentMode = MapModeChangedEvent.Mode.MAP;
@@ -57,6 +60,7 @@ public class GoogleMapFragment extends Fragment {
     @Inject SpiceManager spiceManager;
     private int mTransitionMillis;
     private boolean mZoomOutToastShown;
+    private FloatingActionButton mDrawButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,7 +73,6 @@ public class GoogleMapFragment extends Fragment {
     public void onStart() {
         super.onStart();
         spiceManager.start(getActivity());
-
     }
 
     @Override
@@ -82,8 +85,8 @@ public class GoogleMapFragment extends Fragment {
 
     @Override
     public void onLowMemory() {
-        super.onLowMemory();
         mGoogleMapView.onLowMemory();
+        super.onLowMemory();
     }
 
     @Override
@@ -97,24 +100,25 @@ public class GoogleMapFragment extends Fragment {
         mTransitionMillis = this.getResources().getInteger(R.integer.mode_transition_millis);
 
         mGoogleMapView = ViewUtils.subViewById(mView, R.id.google_map_view);
+        mDrawButton = ViewUtils.subViewById(mView, R.id.draw_btn);
         mGoogleMapView.onCreate(savedInstanceState);
         mGoogleMap = mGoogleMapView.getMap();
 
         mGoogleMap.getUiSettings().setCompassEnabled(true);
-        mGoogleMap.getUiSettings().setZoomControlsEnabled(true);
+        mGoogleMap.getUiSettings().setZoomControlsEnabled(false);
 
-        mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-
-            @Override
-            public void onMapClick(LatLng latLng) {
-                mapClick(latLng);
-            }
-        });
+//        mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+//
+//            @Override
+//            public void onMapClick(LatLng latLng) {
+//                mapClick(latLng);
+//            }
+//        });
 
         mGoogleMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
-                cameraChanged(cameraPosition);
+                cameraChanged();
             }
         });
 
@@ -146,32 +150,79 @@ public class GoogleMapFragment extends Fragment {
 
             float newZoom = DEFAULT_ZOOM;
             LatLng center = new LatLng(latitude, longitude);
-            CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, newZoom);
+            CameraUpdate update = CameraUpdateFactory.newCameraPosition(new CameraPosition(
+                    center, newZoom, 30, 0
+            ));
 
-            mGoogleMap.animateCamera(update);
+            mAnimatingCamera = true;
+            mGoogleMap.animateCamera(update, new GoogleMap.CancelableCallback() {
+                @Override
+                public void onFinish() {
+                    cameraChanged();
+                    mAnimatingCamera = false;
+                }
+
+                @Override
+                public void onCancel() {
+                    cameraChanged();
+                    mAnimatingCamera = false;
+                }
+            });
         }
+
+        mDrawButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawButtonClicked();
+            }
+        });
 
         mEventBus.register(this);
 
         showToast("Click on etches nearby to start drawing.");
 
+        final Handler h = new Handler();
+
+        h.postDelayed(new Runnable(){
+            public void run(){
+                removeEtchesFarFromLatLng(mGoogleMap.getCameraPosition().target);
+                h.postDelayed(this, 5000);
+            }
+        }, 5000);
+
         return mView;
     }
 
-    private void cameraChanged(CameraPosition cameraPosition) {
-        removeEtchesFarFromLatLng(cameraPosition.target);
+    private void drawButtonClicked() {
+        if (mLocation == null) {
+            showToast("Where are you?\n(try turning on GPS and WiFi)");
+        }
+
+        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(
+                new LatLng(mLocation.getLatitude(), mLocation.getLongitude())
+        );
+        Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
+        if (!etch.isPresent()) {
+            addEtchGroundOverlay(etchLatLng);
+        }
+        etch = mEtchOverlayManager.getEtchAt(etchLatLng);
+        goToSelectedEtch(etch.get());
+    }
+
+    private void cameraChanged() {
+        CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
         if (!mEtchOverlayManager.hasEtches()) {
             attemptAddOverlaysToMapBasedOnLocation();
         }
         else {
-//            if (cameraPosition.zoom < MIN_ZOOM_FOR_ETCHES) {
-//                if (!mZoomOutToastShown) {
-//                    mZoomOutToastShown = true;
-//                    String text = "Cannot display etches when zoomed out too far.";
-//                    showToast(text);
-//                }
-//                return;
-//            }
+            if (cameraPosition.zoom < MIN_ZOOM_FOR_ETCHES) {
+                if (!mZoomOutToastShown) {
+                    mZoomOutToastShown = true;
+                    String text = "Cannot display etches when zoomed out too far.";
+                    showToast(text);
+                }
+                return;
+            }
 
             if (mAnimatingCamera) {
                 return;
@@ -195,20 +246,20 @@ public class GoogleMapFragment extends Fragment {
                 latLng,
                 MAX_ETCH_GRID_SIZE
         );
-        mEtchOverlayManager.removeEtchesOutsideOfBounds(bounds);
+       mEtchOverlayManager.removeEtchesOutsideOfBounds(bounds);
     }
 
-    private void mapClick(LatLng latLng) {
-        if (mEtchOverlayManager == null) {
-            return;
-        }
-
-        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
-        Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
-        if (etch.isPresent() && mEditableBounds.contains(etch.get().getEtchLatLng())) {
-            goToSelectedEtch(etch.get());
-        }
-    }
+//    private void mapClick(LatLng latLng) {
+//        if (mEtchOverlayManager == null) {
+//            return;
+//        }
+//
+//        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
+//        Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
+//        if (etch.isPresent() && mEditableBounds.contains(etch.get().getEtchLatLng())) {
+//            goToSelectedEtch(etch.get());
+//        }
+//    }
 
     private void goToSelectedEtch(final EtchOverlayImage etchItem) {
         int paddingPx = 0;
@@ -241,6 +292,7 @@ public class GoogleMapFragment extends Fragment {
 
     private void goToDrawingMode(EtchOverlayImage etchItem) {
         toggleMapControls(false);
+        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
 
         mCurrentMode = MapModeChangedEvent.Mode.DRAWING;
         mEventBus.post(new MapModeChangedEvent(mCurrentMode));
@@ -248,6 +300,7 @@ public class GoogleMapFragment extends Fragment {
 
     private void leaveDrawingMode() {
         mCurrentMode = MapModeChangedEvent.Mode.MAP;
+        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(true);
         toggleMapControls(true);
     }
 
@@ -256,15 +309,14 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.getUiSettings().setAllGesturesEnabled(b);
         mGoogleMap.getUiSettings().setCompassEnabled(b);
         mGoogleMap.getUiSettings().setIndoorLevelPickerEnabled(b);
-        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(b);
-        mGoogleMap.getUiSettings().setZoomControlsEnabled(b);
+//        mGoogleMap.getUiSettings().setZoomControlsEnabled(b);
         mGoogleMap.setMyLocationEnabled(b);
     }
 
     private void useLocation(Location location) {
-        if (mLocation != null) {
-            return;
-        }
+//        if (mLocation != null) {
+//            return;
+//        }
 
         SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
         prefs.edit()
@@ -274,12 +326,10 @@ public class GoogleMapFragment extends Fragment {
 
         mLocation = location;
 
-        LatLng latLng = CoordinateUtils.toLatLng(location);
+//        LatLng latLng = CoordinateUtils.toLatLng(location);
 
-        mEditableBounds = CoordinateUtils.createBoundsEnclosingXIncrements(latLng, 1);
-
-        centerOnLocationForEtches();
-        syncLoadingState();
+//        centerOnLocationForEtches();
+//        syncLoadingState();
     }
 
     private void syncLoadingState() {
@@ -306,7 +356,7 @@ public class GoogleMapFragment extends Fragment {
         mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_VISIBLE
         );
-        mMainActivity.getActionBar().setDisplayHomeAsUpEnabled(false);
+        mMainActivity.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         mMainActivity.setProgressBarIndeterminateVisibility(true);
 
     }
@@ -334,7 +384,6 @@ public class GoogleMapFragment extends Fragment {
     @Override
     public void onResume() {
         mGoogleMapView.onResume();
-        toggleMapControls(true);
         super.onResume();
     }
 
@@ -343,19 +392,36 @@ public class GoogleMapFragment extends Fragment {
         inflater.inflate(R.menu.map, menu);
     }
 
-
     @Override
     public void onDestroy() {
-        mGoogleMapView.onDestroy();
         mEventBus.unregister(this);
         super.onDestroy();
     }
 
+    public void onPause() {
+        this.mGoogleMapView.onPause();
+        super.onPause();
+    }
+
+    public void onDestroyView() {
+        this.mGoogleMapView.onDestroy();
+        super.onDestroyView();
+    }
+
+    public void onSaveInstanceState(Bundle outState) {
+        if(outState != null) {
+            outState.setClassLoader(MapFragment.class.getClassLoader());
+        }
+
+        super.onSaveInstanceState(outState);
+        this.mGoogleMapView.onSaveInstanceState(outState);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.refresh_map) {
-            refreshMap();
-        }
+//        if (item.getItemId() == R.id.refresh_map) {
+//            refreshMap();
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -443,8 +509,8 @@ public class GoogleMapFragment extends Fragment {
         LatLng southGeo = CoordinateUtils.incrementSouth(etchPoint, 1);
 
         LatLngBounds etchBounds = new LatLngBounds(southGeo, eastGeo);
-        boolean editable = mEditableBounds.contains(etchPoint);
-        mEtchOverlayManager.addEtch(etchBounds, editable);
+//        boolean editable = mEditableBounds.contains(etchPoint);
+        mEtchOverlayManager.addEtch(etchBounds, true);
     }
 
     private void centerOnLocationForEtches() {
@@ -455,6 +521,7 @@ public class GoogleMapFragment extends Fragment {
         }
         else {
             mAnimatingCamera = true;
+            CameraPosition pos = new CameraPosition(center, zoomLevel, .75f, 0);
             CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, zoomLevel);
             mGoogleMap.animateCamera(update, new GoogleMap.CancelableCallback() {
                 @Override
@@ -507,7 +574,9 @@ public class GoogleMapFragment extends Fragment {
     public void handleDrawingComplete(DoneDrawingCommand cmd) {
         float newZoom = DEFAULT_ZOOM;
         LatLng center = mGoogleMap.getCameraPosition().target;
-        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(center, newZoom);
+
+        CameraPosition pos = new CameraPosition(center, newZoom, 30, 0);
+        CameraUpdate update = CameraUpdateFactory.newCameraPosition(pos);
 
         mEtchOverlayManager.showAllEtches();
 

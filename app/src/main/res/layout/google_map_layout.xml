@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:fab="http://schemas.android.com/apk/res-auto"
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
@@ -31,5 +32,18 @@
                    <!--android:id="@+id/map_loader_alert_img" />-->
 
     <!--</kurtome.etch.app.layout.OverlayRelativeLayout>-->
+    <com.getbase.floatingactionbutton.FloatingActionButton
+        android:id="@+id/draw_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_alignBottom="@+id/google_map_view"
+        android:layout_alignRight="@+id/google_map_view"
+        android:layout_alignEnd="@+id/google_map_view"
+        fab:fab_icon="@drawable/ic_action_create"
+        fab:fab_colorNormal="@color/dark_contrast"
+            />
 
 </RelativeLayout>

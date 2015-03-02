@@ -30,7 +30,14 @@ public class EtchOverlayManager {
         return mEtchesByLatLngId.containsKey(latLngId);
     }
 
-    public void addEtch(LatLngBounds latLngBounds, boolean editable) {
+    public synchronized void addEtch(LatLngBounds latLngBounds, boolean editable) {
+        if (!ProjectionUtils.isComputableInCurrentView(
+                mGoogleMapFragment.getMap().getProjection(),
+                latLngBounds
+        )) {
+            return;
+        }
+
         LatLng etchOrigin = CoordinateUtils.northWestCorner(latLngBounds);
         if (hasEtchAtPoint(etchOrigin)) {
             // don't add twice
@@ -95,7 +102,11 @@ public class EtchOverlayManager {
         return new LatLng(latitude, longitude);
     }
 
-    public void removeEtchesOutsideOfBounds(LatLngBounds bounds) {
+    public synchronized void removeEtchesOutsideOfBounds(LatLngBounds bounds) {
+        if (mEtchesByLatLngId.isEmpty()) {
+            return;
+        }
+
         Iterator<Map.Entry<String, EtchOverlayImage>> iterator = mEtchesByLatLngId.entrySet().iterator();
         for (Map.Entry<String, EtchOverlayImage> entry = iterator.next(); iterator.hasNext(); entry = iterator.next()) {
             String latLngId = entry.getKey();

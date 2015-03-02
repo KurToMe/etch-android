@@ -30,7 +30,6 @@ public class EtchOverlayImage {
     private final boolean mEditable;
     private GoogleMapFragment mMapFragment;
     private Coordinates mEtchCoordinates;
-    private double mEtchAspectRatio;
 
     private Paint mOverlayPaint = new Paint();
 
@@ -65,11 +64,7 @@ public class EtchOverlayImage {
         mEtchCoordinates = CoordinateUtils.convert(point);
 
         int heightPx = ETCH_MAP_HEIGHT_PX;
-        mEtchAspectRatio = ProjectionUtils.calcAspectRatio(
-                mapFragment.getMap().getProjection(),
-                latLngBounds
-        );
-        int widthPx = RectangleUtils.calcWidthWithAspectRatio(heightPx, mEtchAspectRatio);
+        int widthPx = RectangleUtils.calcWidthWithAspectRatio(heightPx, getAspectRatio());
 
         mOverlayBitmapHeight = ETCH_MAP_HEIGHT_PX;
         // leaves extra width, but must be power of two so just make it square
@@ -102,18 +97,22 @@ public class EtchOverlayImage {
             return;
         }
 
-        Paint paint = new Paint();
-        paint.setStrokeWidth(2);
-        canvas.drawLine(1, 1, 1, mEtchSize.height - 1, paint); // to lower left
-        canvas.drawLine(1, mEtchSize.height - 1, mEtchSize.width - 1, mEtchSize.height - 1, paint); // to lower right
-        canvas.drawLine(mEtchSize.width - 1, mEtchSize.height - 1, mEtchSize.width - 1, 1, paint); // to upper right
-        canvas.drawLine(mEtchSize.width - 1, 1, 1, 1, paint); // to upper left
+//        Paint paint = new Paint();
+//        paint.setStrokeWidth(2);
+//        canvas.drawLine(1, 1, 1, mEtchSize.height - 1, paint); // to lower left
+//        canvas.drawLine(1, mEtchSize.height - 1, mEtchSize.width - 1, mEtchSize.height - 1, paint); // to lower right
+//        canvas.drawLine(mEtchSize.width - 1, mEtchSize.height - 1, mEtchSize.width - 1, 1, paint); // to upper right
+//        canvas.drawLine(mEtchSize.width - 1, 1, 1, 1, paint); // to upper left
     }
 
     public void fetchEtch() {
         mLoading = true;
 
-        Bitmap bitmap = createScaledEtchBitmap(Optional.<Bitmap>absent(), getStatusIconBitmap(), ETCH_MAP_HEIGHT_PX);
+        Bitmap bitmap = createScaledEtchBitmap(
+                Optional.<Bitmap>absent(),
+                getStatusIconBitmap(),
+                ETCH_MAP_HEIGHT_PX
+        );
         setGroundOverlayImage(bitmap);
 
         mMapFragment.spiceManager.execute(new GetEtchRequest(mEtchCoordinates), new RequestListener<Etch>() {
@@ -253,8 +252,8 @@ public class EtchOverlayImage {
 //    }
 
     public Bitmap createScaledEtchBitmap(Optional<Bitmap> bitmap, Optional<Bitmap> statusBitmap, int srcHeight) {
-        Bitmap etchBitmap = createOverlayBitmap();
-        Canvas canvas = new Canvas(etchBitmap);
+        Bitmap canvasBitmap = createOverlayBitmap();
+        Canvas canvas = new Canvas(canvasBitmap);
 
 //        if (statusBitmap.isPresent()) {
 //            drawStatusIconToCanvas(canvas, statusBitmap.get());
@@ -262,11 +261,21 @@ public class EtchOverlayImage {
 
         if (bitmap.isPresent()) {
             Optional<RectangleDimensions> desiredSize = calcScaleDimensions(bitmap.get(), srcHeight);
-            CanvasUtils.drawBitmapScalingBasedOnHeightThenCropping(canvas, bitmap.get(), desiredSize);
+            CanvasUtils.drawBitmapScaledBitmap(canvas, bitmap.get(), desiredSize);
+//            CanvasUtils.drawBitmap(canvas, bitmap.get());
+            logger.info(
+                    "source bitmap size {}x{}. canvas bitmap size {}x{}. borders size {}x{}",
+                    bitmap.get().getWidth(),
+                    bitmap.get().getHeight(),
+                    canvasBitmap.getWidth(),
+                    canvasBitmap.getHeight(),
+                    mEtchSize.width,
+                    mEtchSize.height
+            );
         }
 
         drawBorder(canvas);
-        return etchBitmap;
+        return canvasBitmap;
     }
 
     public Optional<Bitmap> getStatusIconBitmap() {
@@ -294,10 +303,10 @@ public class EtchOverlayImage {
     }
 
     private Optional<RectangleDimensions> calcScaleDimensions(Bitmap bitmap, int srcHeight) {
-        if (bitmap.getHeight() == mEtchSize.height &&
-                bitmap.getWidth() <= mEtchSize.width) {
-            return Optional.absent();
-        }
+//        if (bitmap.getHeight() == mEtchSize.height &&
+//                bitmap.getWidth() <= mEtchSize.width) {
+//            return Optional.absent();
+//        }
 
         // The image will be opened in a canvas of height DrawingView.IMAGE_HEIGHT_PIXELS,
         // so make sure to correctly show how much of that height it takes up.
@@ -315,10 +324,14 @@ public class EtchOverlayImage {
 
         RectangleDimensions desiredSize = new RectangleDimensions(finalWidth, finalHeight);
         return Optional.of(desiredSize);
+//        return Optional.absent();
     }
 
     public double getAspectRatio() {
-        return mEtchAspectRatio;
+        return ProjectionUtils.calcAspectRatio(
+                mMapFragment.getMap().getProjection(),
+                mEtchBounds
+        );
     }
 
     public void setFinishedLoadingRunnable(Runnable runnable) {
