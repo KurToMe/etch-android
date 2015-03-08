@@ -1,13 +1,15 @@
 package kurtome.etch.app.gsm;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.*;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.google.android.gms.internal.jx;
@@ -61,6 +63,7 @@ public class GoogleMapFragment extends Fragment {
     private int mTransitionMillis;
     private boolean mZoomOutToastShown;
     private FloatingActionButton mDrawButton;
+    private ProgressBar mProgressBar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -101,6 +104,7 @@ public class GoogleMapFragment extends Fragment {
 
         mGoogleMapView = ViewUtils.subViewById(mView, R.id.google_map_view);
         mDrawButton = ViewUtils.subViewById(mView, R.id.draw_btn);
+        mProgressBar = ViewUtils.subViewById(mView, R.id.map_loader_progress);
         mGoogleMapView.onCreate(savedInstanceState);
         mGoogleMap = mGoogleMapView.getMap();
 
@@ -125,9 +129,7 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
-                if (mLocation == null) {
-                    useLocation(location);
-                }
+                useLocation(location);
             }
         });
 
@@ -179,8 +181,6 @@ public class GoogleMapFragment extends Fragment {
 
         mEventBus.register(this);
 
-        showToast("Click on etches nearby to start drawing.");
-
         final Handler h = new Handler();
 
         h.postDelayed(new Runnable(){
@@ -196,6 +196,13 @@ public class GoogleMapFragment extends Fragment {
     private void drawButtonClicked() {
         if (mLocation == null) {
             showToast("Where are you?\n(try turning on GPS and WiFi)");
+            return;
+        }
+
+        if (mAnimatingCamera) {
+            // ignore while animating.
+            // This can help prevent double click craziness
+            return;
         }
 
         LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(
@@ -203,10 +210,17 @@ public class GoogleMapFragment extends Fragment {
         );
         Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
         if (!etch.isPresent()) {
-            addEtchGroundOverlay(etchLatLng);
+            // camera must be far away
+            centerOnLocationForEtches(new Runnable() {
+                @Override
+                public void run() {
+                    drawButtonClicked();
+                }
+            });
         }
-        etch = mEtchOverlayManager.getEtchAt(etchLatLng);
-        goToSelectedEtch(etch.get());
+        else {
+            goToSelectedEtch(etch.get());
+        }
     }
 
     private void cameraChanged() {
@@ -237,7 +251,7 @@ public class GoogleMapFragment extends Fragment {
                 text,
                 Toast.LENGTH_LONG
         );
-        toast.setGravity(Gravity.BOTTOM, 0, 20);
+        toast.setGravity(Gravity.CENTER, 0, 0);
         toast.show();
     }
 
@@ -276,14 +290,18 @@ public class GoogleMapFragment extends Fragment {
 
         toggleMapControls(false);
 
-        mGoogleMap.animateCamera(update, mTransitionMillis, new GoogleMap.CancelableCallback() {
+        mAnimatingCamera = true;
+        mDrawButton.setVisibility(View.INVISIBLE);
+        mGoogleMap.animateCamera(update, new GoogleMap.CancelableCallback() {
             @Override
             public void onFinish() {
+                mAnimatingCamera = false;
                 goToDrawingMode(etchItem);
             }
 
             @Override
             public void onCancel() {
+                mAnimatingCamera = false;
                 goToDrawingMode(etchItem);
             }
         });
@@ -291,17 +309,21 @@ public class GoogleMapFragment extends Fragment {
     }
 
     private void goToDrawingMode(EtchOverlayImage etchItem) {
+        logger.info("Going to drawing mode.");
         toggleMapControls(false);
-        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
+        mGoogleMap.setMyLocationEnabled(false);
+        mDrawButton.setVisibility(View.INVISIBLE);
 
         mCurrentMode = MapModeChangedEvent.Mode.DRAWING;
         mEventBus.post(new MapModeChangedEvent(mCurrentMode));
     }
 
     private void leaveDrawingMode() {
+        logger.info("Leaving drawing mode.");
         mCurrentMode = MapModeChangedEvent.Mode.MAP;
-        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(true);
         toggleMapControls(true);
+        mGoogleMap.setMyLocationEnabled(true);
+        mDrawButton.setVisibility(View.VISIBLE);
     }
 
     private void toggleMapControls(boolean b) {
@@ -309,14 +331,12 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.getUiSettings().setAllGesturesEnabled(b);
         mGoogleMap.getUiSettings().setCompassEnabled(b);
         mGoogleMap.getUiSettings().setIndoorLevelPickerEnabled(b);
+        mGoogleMap.getUiSettings().setMyLocationButtonEnabled(b);
 //        mGoogleMap.getUiSettings().setZoomControlsEnabled(b);
-        mGoogleMap.setMyLocationEnabled(b);
     }
 
     private void useLocation(Location location) {
-//        if (mLocation != null) {
-//            return;
-//        }
+        boolean firstLocation = mLocation == null;
 
         SharedPreferences prefs = getActivity().getSharedPreferences(MainActivity.PREFS_NAME, 0);
         prefs.edit()
@@ -326,15 +346,23 @@ public class GoogleMapFragment extends Fragment {
 
         mLocation = location;
 
+        if (firstLocation) {
+            centerOnLocationForEtches();
+        }
+
 //        LatLng latLng = CoordinateUtils.toLatLng(location);
 
-//        centerOnLocationForEtches();
 //        syncLoadingState();
     }
 
     private void syncLoadingState() {
         boolean loading = isLoading();
-        mMainActivity.setProgressBarIndeterminateVisibility(loading);
+        if (loading) {
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
+        else {
+            mProgressBar.setVisibility(View.INVISIBLE);
+        }
     }
 
     private boolean isLoading() {
@@ -353,14 +381,11 @@ public class GoogleMapFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         mMainActivity = ObjUtils.cast(activity);
-        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_VISIBLE
-        );
-        mMainActivity.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        mMainActivity.setProgressBarIndeterminateVisibility(true);
-
+        ActionBar supportActionBar = mMainActivity.getSupportActionBar();
+        if (supportActionBar != null) {
+            supportActionBar.setDisplayHomeAsUpEnabled(false);
+        }
     }
-
 
     private void refreshMap() {
         mEtchOverlayManager.recreateExistingEtches();
@@ -514,6 +539,9 @@ public class GoogleMapFragment extends Fragment {
     }
 
     private void centerOnLocationForEtches() {
+        centerOnLocationForEtches(null);
+    }
+    private void centerOnLocationForEtches(final Runnable callback) {
         LatLng center = CoordinateUtils.toLatLng(mLocation);
         float zoomLevel = 17.75f;
         if (isNearPositionAndZoom(center, zoomLevel)) {
@@ -528,12 +556,18 @@ public class GoogleMapFragment extends Fragment {
                 public void onFinish() {
                     mAnimatingCamera = false;
                     attemptAddOverlaysToMapBasedOnLocation();
+                    if (callback != null) {
+                        callback.run();
+                    }
                 }
 
                 @Override
                 public void onCancel() {
                     mAnimatingCamera = false;
                     attemptAddOverlaysToMapBasedOnLocation();
+                    if (callback != null) {
+                        callback.run();
+                    }
                 }
             });
         }
@@ -580,14 +614,17 @@ public class GoogleMapFragment extends Fragment {
 
         mEtchOverlayManager.showAllEtches();
 
-        mGoogleMap.animateCamera(update, mTransitionMillis, new GoogleMap.CancelableCallback() {
+        mAnimatingCamera = true;
+        mGoogleMap.animateCamera(update, new GoogleMap.CancelableCallback() {
             @Override
             public void onFinish() {
+                mAnimatingCamera = false;
                 leaveDrawingMode();
             }
 
             @Override
             public void onCancel() {
+                mAnimatingCamera = false;
                 leaveDrawingMode();
             }
         });

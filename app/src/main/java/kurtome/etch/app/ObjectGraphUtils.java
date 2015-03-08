@@ -39,6 +39,19 @@ public class ObjectGraphUtils {
      *
      * @param fragment The given fragment
      */
+    public static void inject(@Nonnull android.support.v4.app.Fragment fragment) {
+        final Activity activity = fragment.getActivity();
+        if (activity == null)
+            throw new IllegalStateException("Attempting to get Activity before it has been attached to "
+                    + fragment.getClass().getName());
+        ((ObjectGraphApplication) activity.getApplication()).inject(fragment);
+    }
+
+    /**
+     * <p>Injects the dependencies for the given {@link Fragment}.</p>
+     *
+     * @param fragment The given fragment
+     */
     public static void inject(@Nonnull Fragment fragment) {
         final Activity activity = fragment.getActivity();
         if (activity == null)

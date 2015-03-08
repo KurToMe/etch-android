@@ -140,7 +140,9 @@ public class DrawingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        mDrawingStrategy.draw(canvas);
+        if (mDrawingStrategy != null) {
+            mDrawingStrategy.draw(canvas);
+        }
     }
 
     //respond to touch interaction

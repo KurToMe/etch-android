@@ -14,7 +14,8 @@
      limitations under the License.
 -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogView
+        xmlns:android="http://schemas.android.com/apk/res/android"
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -31,13 +32,6 @@
             android:layout_margin="5dp"
             />
 
-    <View android:background="@color/dark_contrast"
-          android:layout_width="match_parent"
-          android:layout_height="2dp"
-          android:padding="5dp"
-          android:layout_margin="1dp"
-          android:id="@+id/color_picker_horizontal_divider"/>
-
     <LinearLayout android:layout_width="match_parent"
                   android:layout_height="wrap_content"
                   android:orientation="horizontal"
@@ -46,45 +40,17 @@
         <kurtome.etch.app.colorpickerview.view.ColorPanelView
                 android:id="@+id/color_panel_old"
                 android:layout_width="0dp"
-                android:layout_height="fill_parent"
+                android:layout_height="50dp"
                 android:layout_weight="0.25"
                 android:padding="@dimen/action_padding"
-                android:layout_margin="5dp"
                 />
-
-        <ImageButton android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:src="@drawable/ic_action_cancel"
-                     android:background="@drawable/selectable_background_etch1"
-                     android:id="@+id/decline_color_btn"
-                     android:padding="@dimen/action_padding"
-                     android:layout_margin="5dp"
-                />
-
-        <View android:background="@color/dark_contrast"
-              android:layout_width="2dp"
-              android:layout_height="match_parent"
-              android:layout_margin="1dp"
-              android:padding="@dimen/action_padding"
-              android:id="@+id/color_picker_vertical_divider" />
 
         <kurtome.etch.app.colorpickerview.view.ColorPanelView
                 android:id="@+id/color_panel_new"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_margin="5dp"
+                android:layout_height="50dp"
                 android:padding="@dimen/action_padding"
                 android:layout_weight="0.5"
                 />
-
-        <ImageButton android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:background="@drawable/selectable_background_etch1"
-                     android:src="@drawable/ic_action_done"
-                     android:layout_margin="5dp"
-                     android:id="@+id/accept_color_btn"
-                     android:padding="@dimen/action_padding"
-                />
-
     </LinearLayout>
-</LinearLayout>
+</kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogView>

@@ -1,9 +1,8 @@
 package kurtome.etch.app.activity;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentManager;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Window;
@@ -46,10 +45,10 @@ public class MainActivity extends ActionBarActivity {
 
         setContentView(R.layout.activity_main);
 
-        getFragmentManager().addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+        getSupportFragmentManager().addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
             @Override
             public void onBackStackChanged() {
-                if (getFragmentManager().findFragmentByTag(DRAWING_FRAGMENT_TAG) == null) {
+                if (getSupportFragmentManager().findFragmentByTag(DRAWING_FRAGMENT_TAG) == null) {
                     mEventBus.post(new DoneDrawingCommand());
                 }
             }
@@ -57,13 +56,16 @@ public class MainActivity extends ActionBarActivity {
 
 
         if (savedInstanceState == null) {
-            getFragmentManager().beginTransaction()
+            getSupportFragmentManager().beginTransaction()
                     .add(R.id.container, mMapFragment)
                     .commit();
         }
 
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayShowTitleEnabled(false);
+        actionBar.setDisplayShowHomeEnabled(true);
+        actionBar.setDisplayUseLogoEnabled(true);
+        actionBar.setLogo(R.mipmap.ic_launcher);
     }
 
     @Override
@@ -85,7 +87,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private boolean isFragmentVisible(String tag) {
-        Fragment fragment = getFragmentManager().findFragmentByTag(tag);
+        Fragment fragment = getSupportFragmentManager().findFragmentByTag(tag);
         if (fragment != null) {
             return fragment.isVisible();
         }
@@ -102,7 +104,7 @@ public class MainActivity extends ActionBarActivity {
         DrawingFragment fragment = new DrawingFragment();
         fragment.setEtchData(event);
 
-        getFragmentManager().beginTransaction()
+        getSupportFragmentManager().beginTransaction()
 //                .setCustomAnimations(R.animator.fade_in, 0, R.animator.fade_in, 0)
                 .add(R.id.container, fragment, DRAWING_FRAGMENT_TAG)
 //                .hide(mMapFragment)
@@ -117,7 +119,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void popToMap() {
-        getFragmentManager().popBackStack(
+        getSupportFragmentManager().popBackStack(
                 DRAWING_ADDED_BACKSTACK,
                 FragmentManager.POP_BACK_STACK_INCLUSIVE
         );

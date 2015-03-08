@@ -46,11 +46,11 @@
 
     <RelativeLayout android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:background="@color/action_background">
+                  android:background="@color/primary">
         <kurtome.etch.app.drawing.PaintSwatchButton
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
-                android:background="@drawable/selectable_background_etch1"
+                android:background="#00000000"
                 android:padding="@dimen/action_padding"
                 android:contentDescription="@string/color_chooser"
                 android:layout_alignParentLeft="true"
@@ -58,8 +58,8 @@
 
         <ImageButton android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:background="@drawable/selectable_background_etch1"
-                     android:src="@drawable/ic_action_gesture"
+                     android:src="@drawable/ic_action_translate"
+                     android:background="#00000000"
                      android:layout_toRightOf="@id/color_swatch_action_btn"
                      android:padding="@dimen/action_padding"
                      android:contentDescription="@string/brush_options"
@@ -67,9 +67,9 @@
 
         <ImageButton android:layout_height="wrap_content"
                      android:layout_width="wrap_content"
-                     android:layout_gravity="right"
-                     android:background="@drawable/selectable_background_etch1"
+                     android:background="#00000000"
                      android:src="@drawable/ic_action_undo"
+                     android:layout_gravity="right"
                      android:layout_alignParentRight="true"
                      android:padding="@dimen/action_padding"
                      android:contentDescription="@string/undo"

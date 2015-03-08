@@ -53,9 +53,20 @@ public class ProjectionUtils {
         return new RectangleDimensions(width, height);
     }
 
-    public static boolean isComputableInCurrentView(Projection projection, LatLngBounds srcBounds) {
-        RectangleDimensions projectedBoundsPx = calcProjectedSize(projection, srcBounds);
-        if (projectedBoundsPx.width > projectedBoundsPx.height) {
+    public static boolean isComputableInCurrentView(Projection projection, LatLngBounds latLngBounds) {
+        Point originPoint = projection.toScreenLocation(CoordinateUtils.northWestCorner(latLngBounds));
+        Point eastPoint = projection.toScreenLocation(latLngBounds.northeast);
+        Point southPoint = projection.toScreenLocation(latLngBounds.southwest);
+        int width = distance(originPoint, eastPoint);
+        int height = distance(originPoint, southPoint);
+
+        if (width < 0) {
+            return false;
+        }
+        if (height < 0) {
+            return false;
+        }
+        if (width > height) {
             return false;
         }
         return true;

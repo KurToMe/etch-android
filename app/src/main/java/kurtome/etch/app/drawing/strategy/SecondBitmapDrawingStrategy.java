@@ -73,8 +73,8 @@ public class SecondBitmapDrawingStrategy implements DrawingStrategy {
 
         mCurrentBrush = drawingBrush;
         mBackgroundPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OVER));
-        mBackgroundPaint.setColor(context.getResources().getColor(R.color.dark_contrast));
-        mBackgroundPaint.setAlpha(210);
+        mBackgroundPaint.setColor(context.getResources().getColor(R.color.primary_dark));
+        mBackgroundPaint.setAlpha(200);
 
         int alphaRectSizePx = 20;
         mAlphaPatternBitmap = AlphaPatternDrawable.createPatternBitmap(mSecondBitmap.getWidth(), mSecondBitmap.getHeight(), alphaRectSizePx);

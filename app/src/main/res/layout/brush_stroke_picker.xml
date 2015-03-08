@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<kurtome.etch.app.drawing.BrushStrokeView
+        xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="horizontal"
               android:layout_width="match_parent"
               android:padding="5dp"
@@ -30,15 +31,15 @@
         android:padding="5dp"
         android:textStyle="normal" />
 
-    <SeekBar
-        android:id="@+id/stroke_width_seek"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/stroke_width_label_txt"
-        android:layout_width="fill_parent"
-        android:paddingLeft="15dp"
-        android:paddingRight="15dp"
-        style="@style/SeekBarAppTheme"
-        android:layout_margin="10dp" />
+    <org.adw.library.widgets.discreteseekbar.DiscreteSeekBar
+            android:id="@+id/stroke_width_seek"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/stroke_width_label_txt"
+            android:layout_width="fill_parent"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:layout_margin="10dp"
+    />
 
 
     <TextView android:layout_marginTop="10dp"
@@ -53,58 +54,56 @@
               android:id="@+id/stroke_mode_label_txt" />
 
     <Spinner android:id="@+id/brush_mode_spinner"
-             android:layout_alignParentRight="true"
+             android:layout_toRightOf="@id/stroke_mode_label_txt"
              android:layout_below="@id/stroke_width_seek"
              android:layout_alignBaseline="@id/stroke_mode_label_txt"
-             android:layout_width="wrap_content"
              android:layout_height="wrap_content"
              android:padding="5dp"
              android:layout_margin="10dp"
-             style="@style/SpinnerAppTheme"
-            />
+             android:layout_width="fill_parent"/>
 
-    <View android:background="@color/dark_contrast"
-          android:layout_width="match_parent"
-          android:layout_height="2dp"
-          android:padding="5dp"
-          android:layout_marginTop="10dp"
-          android:layout_marginRight="1dp"
-          android:layout_marginLeft="1dp"
-          android:layout_marginBottom="1dp"
-          android:layout_below="@id/brush_mode_spinner"
-          android:id="@+id/stroke_picker_horizontal_divider"/>
+    <!--<View android:background="@color/accent"-->
+          <!--android:layout_width="match_parent"-->
+          <!--android:layout_height="2dp"-->
+          <!--android:padding="5dp"-->
+          <!--android:layout_marginTop="10dp"-->
+          <!--android:layout_marginRight="1dp"-->
+          <!--android:layout_marginLeft="1dp"-->
+          <!--android:layout_marginBottom="1dp"-->
+          <!--android:layout_below="@id/brush_mode_spinner"-->
+          <!--android:id="@+id/stroke_picker_horizontal_divider"/>-->
 
-    <LinearLayout android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_below="@id/stroke_picker_horizontal_divider"
-                  android:orientation="horizontal" >
+    <!--<LinearLayout android:layout_width="match_parent"-->
+                  <!--android:layout_height="wrap_content"-->
+                  <!--android:layout_below="@id/stroke_picker_horizontal_divider"-->
+                  <!--android:orientation="horizontal" >-->
 
-        <ImageButton android:layout_width="0dp"
-                     android:layout_weight=".5"
-                     android:layout_height="wrap_content"
-                     android:src="@drawable/ic_action_cancel"
-                     android:background="@drawable/selectable_background_etch1"
-                     android:id="@+id/decline_stroke_btn"
-                     android:padding="@dimen/action_padding"
-                     android:layout_margin="5dp" />
+        <!--<ImageButton android:layout_width="0dp"-->
+                     <!--android:layout_weight=".5"-->
+                     <!--android:layout_height="wrap_content"-->
+                     <!--android:background="#00000000"-->
+                     <!--android:src="@drawable/ic_action_cancel"-->
+                     <!--android:id="@+id/decline_stroke_btn"-->
+                     <!--android:padding="@dimen/action_padding"-->
+                     <!--android:layout_margin="5dp" />-->
 
-        <View android:background="@color/dark_contrast"
-              android:layout_width="2dp"
-              android:layout_height="match_parent"
-              android:layout_margin="1dp"
-              android:padding="@dimen/action_padding"
-              android:id="@+id/stroke_picker_vertical_divider" />
+        <!--<View android:background="@color/accent"-->
+              <!--android:layout_width="2dp"-->
+              <!--android:layout_height="match_parent"-->
+              <!--android:layout_margin="1dp"-->
+              <!--android:padding="@dimen/action_padding"-->
+              <!--android:id="@+id/stroke_picker_vertical_divider" />-->
 
 
-        <ImageButton android:layout_width="0dp"
-                     android:layout_height="wrap_content"
-                     android:layout_weight=".5"
-                     android:background="@drawable/selectable_background_etch1"
-                     android:src="@drawable/ic_action_done"
-                     android:layout_margin="5dp"
-                     android:id="@+id/accept_stroke_btn"
-                     android:padding="@dimen/action_padding" />
+        <!--<ImageButton android:layout_width="0dp"-->
+                     <!--android:layout_height="wrap_content"-->
+                     <!--android:layout_weight=".5"-->
+                     <!--android:src="@drawable/ic_action_done"-->
+                     <!--android:background="#00000000"-->
+                     <!--android:layout_margin="5dp"-->
+                     <!--android:id="@+id/accept_stroke_btn"-->
+                     <!--android:padding="@dimen/action_padding" />-->
 
-    </LinearLayout>
+    <!--</LinearLayout>-->
 
-</RelativeLayout>
+</kurtome.etch.app.drawing.BrushStrokeView>

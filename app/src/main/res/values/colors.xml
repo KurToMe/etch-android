@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="overlay_background">#88000000</color>
+    <color name="overlay_background">#00000000</color>
     <color name="action_background">#D6E6C3</color>
-    <color name="neutral_background">#FAFBE3</color>
-    <color name="dark_contrast">#CDCFB7</color>
+    <!--<color name="neutral_background">#FAFBE3</color>-->
+    <!--<color name="dark_contrast">#CDCFB7</color>-->
+
+    <color name="primary">#4ECDC4</color>
+    <color name="primary_dark">#556270</color>
+    <color name="accent">#FF6B6B</color>
+    <color name="bright">#C44D58</color>
+    <color name="accent_bright">#C7F464</color>
 </resources>

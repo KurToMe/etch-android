@@ -1,16 +1,16 @@
 package kurtome.etch.app.drawing;
 
 import android.app.Activity;
-import android.app.Fragment;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.view.*;
 import android.widget.*;
-import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
@@ -19,7 +19,7 @@ import com.squareup.otto.Subscribe;
 import kurtome.etch.app.ObjectGraphUtils;
 import kurtome.etch.app.R;
 import kurtome.etch.app.activity.MainActivity;
-import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogFragment;
+import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogView;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import kurtome.etch.app.domain.SaveEtchCommand;
@@ -30,7 +30,6 @@ import kurtome.etch.app.robospice.GetEtchRequest;
 import kurtome.etch.app.robospice.SaveEtchRequest;
 import kurtome.etch.app.util.ObjUtils;
 import kurtome.etch.app.util.ViewUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +61,7 @@ public class DrawingFragment extends Fragment {
     private boolean mReadyToSave;
     private ActionBar mActionBar;
     private MapModeChangedEvent.Mode mMapMode = MapModeChangedEvent.Mode.MAP;
+    private View mRootView;
 
     @Override
     public void onStart() {
@@ -82,21 +82,11 @@ public class DrawingFragment extends Fragment {
         super.onAttach(activity);
 
         mMainActivity = ObjUtils.cast(activity);
-
-//        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
-//                View.SYSTEM_UI_FLAG_LOW_PROFILE
-//        );
-        mActionBar = mMainActivity.getSupportActionBar();
-        mActionBar.setDisplayHomeAsUpEnabled(true);
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        mMainActivity.getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_VISIBLE
-        );
-        mActionBar.setDisplayHomeAsUpEnabled(false);
     }
 
     @Override
@@ -142,14 +132,15 @@ public class DrawingFragment extends Fragment {
 
     private void updateVisibility() {
         // Should be invisible until the map finishes transitioning completely
-        if (this.getView() != null) {
+        if (mRootView != null) {
             if (mMapMode == MapModeChangedEvent.Mode.DRAWING) {
                 mEtchOverlayItem.hideFromMap();
                 mDrawingView.onMapFinishedChanging();
-                this.getView().setVisibility(View.VISIBLE);
+                mRootView.setVisibility(View.VISIBLE);
             }
             else {
-                this.getView().setVisibility(View.INVISIBLE);
+                mRootView.setVisibility(View.INVISIBLE);
+                mDrawingView.invalidate();
             }
         }
     }
@@ -165,7 +156,7 @@ public class DrawingFragment extends Fragment {
         }
 
         View rootView = inflater.inflate(R.layout.drawing_layout, container, false);
-        rootView.setVisibility(View.INVISIBLE);
+        mRootView = rootView;
 
         mDrawingView = ViewUtils.subViewById(rootView, R.id.drawing);
         mDrawingBrush = mDrawingView.getDrawingBrush();
@@ -188,6 +179,7 @@ public class DrawingFragment extends Fragment {
         mColorSwatchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                setButtonsEnabled(false);
                 showColorDialog();
             }
         });
@@ -196,6 +188,7 @@ public class DrawingFragment extends Fragment {
         mStrokeOptionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                setButtonsEnabled(false);
                 showBrushStrokePicker();
             }
         });
@@ -227,20 +220,49 @@ public class DrawingFragment extends Fragment {
         return rootView;
     }
 
+    private void setButtonsEnabled(boolean enabled) {
+        mColorSwatchButton.setEnabled(enabled);
+        mStrokeOptionButton.setEnabled(enabled);
+    }
+
     private void undoLastDraw() {
         mDrawingView.undoLastDraw();
     }
 
     private void showBrushStrokePicker() {
-        BrushStrokeDialog brushStrokeDialog = new BrushStrokeDialog(getActivity());
-        brushStrokeDialog.setDrawingBrush(mDrawingBrush);
-        brushStrokeDialog.show();
-        brushStrokeDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-                syncBrushChanges();
-            }
-        });
+        LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(
+                Context.LAYOUT_INFLATER_SERVICE
+        );
+        final BrushStrokeView brushStrokeView = (BrushStrokeView) inflater.inflate(
+                R.layout.brush_stroke_picker, null
+        );
+
+        boolean wrapInScrollView = true;
+        int neutralColor = getActivity().getResources().getColor(R.color.primary_dark);
+        MaterialDialog dialog = new MaterialDialog.Builder(getActivity())
+                .customView(brushStrokeView, wrapInScrollView)
+                .positiveText("Ok")
+                .neutralText("Cancel")
+                .neutralColor(neutralColor)
+                .callback(new MaterialDialog.ButtonCallback() {
+                    @Override
+                    public void onPositive(MaterialDialog dialog) {
+                        mDrawingBrush.setMode(brushStrokeView.getPorterDuffMode());
+                        mDrawingBrush.setStrokeWidth(brushStrokeView.getStrokeWidth());
+                        syncBrushChanges();
+                    }
+                })
+                .dismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        setButtonsEnabled(true);
+                    }
+                })
+                .build();
+
+        brushStrokeView.setup(mDrawingBrush);
+
+        dialog.show();
     }
 
     private void syncBrushChanges() {
@@ -261,20 +283,38 @@ public class DrawingFragment extends Fragment {
     }
 
     private void showColorDialog() {
-        ColorPickerDialogFragment dialog = new ColorPickerDialogFragment();
-
-        dialog.setDrawingBrush(mDrawingBrush);
-
-        dialog.show(
-                mMainActivity.getFragmentManager(),
-                COLOR_PICKER_FRAGMENT_TAG
+        LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(
+                Context.LAYOUT_INFLATER_SERVICE
         );
-        dialog.setOnDismissCallback(new Runnable() {
-            @Override
-            public void run() {
-                syncBrushChanges();
-            }
-        });
+        final ColorPickerDialogView dialogView = (ColorPickerDialogView) inflater.inflate(
+                R.layout.dialog_color_picker, null
+        );
+
+        boolean wrapInScrollView = false;
+        int neutralColor = getActivity().getResources().getColor(R.color.primary_dark);
+        MaterialDialog dialog = new MaterialDialog.Builder(getActivity())
+                .customView(dialogView, wrapInScrollView)
+                .positiveText("Ok")
+                .neutralText("Cancel")
+                .neutralColor(neutralColor)
+                .callback(new MaterialDialog.ButtonCallback() {
+                    @Override
+                    public void onPositive(MaterialDialog dialog) {
+                        mDrawingBrush.setColor(dialogView.getNewColor());
+                        syncBrushChanges();
+                    }
+                })
+                .dismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialogInterface) {
+                        setButtonsEnabled(true);
+                    }
+                })
+                .build();
+
+        dialogView.setup(mDrawingBrush);
+
+        dialog.show();
     }
 
     private void showLoader() {

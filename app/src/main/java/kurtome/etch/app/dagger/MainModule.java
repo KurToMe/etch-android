@@ -7,7 +7,7 @@ import com.squareup.otto.Bus;
 import dagger.Module;
 import dagger.Provides;
 import kurtome.etch.app.activity.MainActivity;
-import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogFragment;
+import kurtome.etch.app.colorpickerview.dialog.ColorPickerDialogView;
 import kurtome.etch.app.drawing.DrawingFragment;
 import kurtome.etch.app.gsm.GoogleMapFragment;
 
@@ -18,7 +18,7 @@ import javax.inject.Singleton;
                 MainActivity.class,
                 DrawingFragment.class,
                 GoogleMapFragment.class,
-                ColorPickerDialogFragment.class
+                ColorPickerDialogView.class
         }
 )
 public class MainModule {
