@@ -3,6 +3,8 @@ package kurtome.etch.app.dagger;
 import android.content.Context;
 import com.octo.android.robospice.JacksonGoogleHttpClientSpiceService;
 import com.octo.android.robospice.SpiceManager;
+import com.octo.android.robospice.request.CachedSpiceRequest;
+import com.octo.android.robospice.request.listener.SpiceServiceListener;
 import com.squareup.otto.Bus;
 import dagger.Module;
 import dagger.Provides;
@@ -31,7 +33,8 @@ public class MainModule {
 
     @Provides
     public SpiceManager provideSpiceManager() {
-        return new SpiceManager(JacksonGoogleHttpClientSpiceService.class);
+        SpiceManager spiceManager = new SpiceManager(JacksonGoogleHttpClientSpiceService.class);
+        return spiceManager;
     }
 
     @Provides @Singleton

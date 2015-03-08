@@ -6,6 +6,7 @@ import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.octo.android.robospice.request.googlehttpclient.GoogleHttpClientSpiceRequest;
+import com.octo.android.robospice.retry.DefaultRetryPolicy;
 import kurtome.etch.app.domain.Coordinates;
 import kurtome.etch.app.domain.Etch;
 import org.apache.commons.io.IOUtils;

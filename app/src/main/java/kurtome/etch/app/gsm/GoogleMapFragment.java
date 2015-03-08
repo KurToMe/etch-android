@@ -1,8 +1,11 @@
 package kurtome.etch.app.gsm;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -64,6 +67,7 @@ public class GoogleMapFragment extends Fragment {
     private boolean mZoomOutToastShown;
     private FloatingActionButton mDrawButton;
     private ProgressBar mProgressBar;
+    private boolean mHasToastedNetworkDown;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -110,14 +114,6 @@ public class GoogleMapFragment extends Fragment {
 
         mGoogleMap.getUiSettings().setCompassEnabled(true);
         mGoogleMap.getUiSettings().setZoomControlsEnabled(false);
-
-//        mGoogleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-//
-//            @Override
-//            public void onMapClick(LatLng latLng) {
-//                mapClick(latLng);
-//            }
-//        });
 
         mGoogleMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
@@ -186,9 +182,9 @@ public class GoogleMapFragment extends Fragment {
         h.postDelayed(new Runnable(){
             public void run(){
                 removeEtchesFarFromLatLng(mGoogleMap.getCameraPosition().target);
-                h.postDelayed(this, 5000);
+                h.postDelayed(this, 1000);
             }
-        }, 5000);
+        }, 1000);
 
         return mView;
     }
@@ -205,9 +201,18 @@ public class GoogleMapFragment extends Fragment {
             return;
         }
 
-        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(
-                new LatLng(mLocation.getLatitude(), mLocation.getLongitude())
-        );
+        LatLng curLatLng = CoordinateUtils.toLatLng(mLocation);
+        if (!isNearPosition(curLatLng)) {
+            logger.info(
+                    "{} is too far away from {}",
+                    curLatLng,
+                    mGoogleMap.getCameraPosition().target
+            );
+            showToast("Can't reach, maybe time for a walk?");
+            return;
+        }
+
+        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(curLatLng);
         Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
         if (!etch.isPresent()) {
             // camera must be far away
@@ -263,18 +268,6 @@ public class GoogleMapFragment extends Fragment {
        mEtchOverlayManager.removeEtchesOutsideOfBounds(bounds);
     }
 
-//    private void mapClick(LatLng latLng) {
-//        if (mEtchOverlayManager == null) {
-//            return;
-//        }
-//
-//        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(latLng);
-//        Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
-//        if (etch.isPresent() && mEditableBounds.contains(etch.get().getEtchLatLng())) {
-//            goToSelectedEtch(etch.get());
-//        }
-//    }
-
     private void goToSelectedEtch(final EtchOverlayImage etchItem) {
         int paddingPx = 0;
         CameraUpdate update = CameraUpdateFactory.newLatLngBounds(
@@ -305,7 +298,6 @@ public class GoogleMapFragment extends Fragment {
                 goToDrawingMode(etchItem);
             }
         });
-
     }
 
     private void goToDrawingMode(EtchOverlayImage etchItem) {
@@ -349,10 +341,6 @@ public class GoogleMapFragment extends Fragment {
         if (firstLocation) {
             centerOnLocationForEtches();
         }
-
-//        LatLng latLng = CoordinateUtils.toLatLng(location);
-
-//        syncLoadingState();
     }
 
     private void syncLoadingState() {
@@ -381,10 +369,6 @@ public class GoogleMapFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         mMainActivity = ObjUtils.cast(activity);
-        ActionBar supportActionBar = mMainActivity.getSupportActionBar();
-        if (supportActionBar != null) {
-            supportActionBar.setDisplayHomeAsUpEnabled(false);
-        }
     }
 
     private void refreshMap() {
@@ -459,6 +443,13 @@ public class GoogleMapFragment extends Fragment {
     private static final int MIN_ETCH_GRID_SIZE = 3;
 
     private void attemptAddOverlaysToMapBasedOnLocation() {
+        if (!isNetworkAvailable()) {
+            if (!mHasToastedNetworkDown) {
+                mHasToastedNetworkDown = true;
+                showToast("No network connection, go find some signal.");
+            }
+        }
+
         if (mEtchOverlayManager.hasEtches()) {
             // already added
             return;
@@ -538,6 +529,16 @@ public class GoogleMapFragment extends Fragment {
         mEtchOverlayManager.addEtch(etchBounds, true);
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        boolean isAvailable = activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        if (isAvailable) {
+            mHasToastedNetworkDown = false;
+        }
+        return isAvailable;
+    }
+
     private void centerOnLocationForEtches() {
         centerOnLocationForEtches(null);
     }
@@ -579,11 +580,20 @@ public class GoogleMapFragment extends Fragment {
             return false;
         }
 
-        if (!NumberUtils.isWithinEpsilon(latLng.latitude, cameraPosition.target.latitude, CoordinateUtils.MIN_INCREMENT)) {
+        if (!isNearPosition(latLng)) {
             return false;
         }
 
-        if (!NumberUtils.isWithinEpsilon(latLng.longitude, cameraPosition.target.longitude, CoordinateUtils.MIN_INCREMENT)) {
+        return true;
+    }
+
+    private boolean isNearPosition(LatLng latLng) {
+        CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
+        if (!NumberUtils.isWithinEpsilon(latLng.latitude, cameraPosition.target.latitude, CoordinateUtils.MIN_INCREMENT * 2)) {
+            return false;
+        }
+
+        if (!NumberUtils.isWithinEpsilon(latLng.longitude, cameraPosition.target.longitude, CoordinateUtils.MIN_INCREMENT * 2)) {
             return false;
         }
 
