@@ -201,29 +201,22 @@ public class GoogleMapFragment extends Fragment {
             return;
         }
 
-        LatLng curLatLng = CoordinateUtils.toLatLng(mLocation);
-        if (!isNearPosition(curLatLng)) {
+        LatLng phoneLocation = CoordinateUtils.toLatLng(mLocation);
+        LatLng mapLocation = mGoogleMap.getCameraPosition().target;
+        if (!isNearPosition(phoneLocation, mapLocation, 4)) {
             logger.info(
                     "{} is too far away from {}",
-                    curLatLng,
+                    mapLocation,
                     mGoogleMap.getCameraPosition().target
             );
             showToast("Can't reach, maybe time for a walk?");
             return;
         }
 
-        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(curLatLng);
+        LatLng etchLatLng = CoordinateUtils.roundToMinIncrementTowardNorthWest(mapLocation);
         Optional<EtchOverlayImage> etch = mEtchOverlayManager.getEtchAt(etchLatLng);
-        if (!etch.isPresent()) {
-            // camera must be far away
-            centerOnLocationForEtches(new Runnable() {
-                @Override
-                public void run() {
-                    drawButtonClicked();
-                }
-            });
-        }
-        else {
+        if (etch.isPresent()) {
+            logger.error("No etch found at {}", etchLatLng);
             goToSelectedEtch(etch.get());
         }
     }
@@ -580,20 +573,19 @@ public class GoogleMapFragment extends Fragment {
             return false;
         }
 
-        if (!isNearPosition(latLng)) {
+        if (!isNearPosition(latLng, cameraPosition.target, 2)) {
             return false;
         }
 
         return true;
     }
 
-    private boolean isNearPosition(LatLng latLng) {
-        CameraPosition cameraPosition = mGoogleMap.getCameraPosition();
-        if (!NumberUtils.isWithinEpsilon(latLng.latitude, cameraPosition.target.latitude, CoordinateUtils.MIN_INCREMENT * 2)) {
+    private boolean isNearPosition(LatLng latLng,  LatLng latLng2, int incrementsAway) {
+        if (!NumberUtils.isWithinEpsilon(latLng.latitude, latLng2.latitude, CoordinateUtils.MIN_INCREMENT * incrementsAway)) {
             return false;
         }
 
-        if (!NumberUtils.isWithinEpsilon(latLng.longitude, cameraPosition.target.longitude, CoordinateUtils.MIN_INCREMENT * 2)) {
+        if (!NumberUtils.isWithinEpsilon(latLng.longitude, latLng2.longitude, CoordinateUtils.MIN_INCREMENT * incrementsAway)) {
             return false;
         }
 
