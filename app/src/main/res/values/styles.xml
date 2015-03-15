@@ -1,7 +1,10 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="EtchTheme" parent="Theme.AppCompat.Light">
+    <style name="EtchTheme" parent="Theme.AppCompat.Light"
+
+            >
+
 
         <!-- colorPrimary is used for the default action bar background -->
         <item name="colorPrimary">@color/primary</item>
@@ -12,6 +15,9 @@
         <!-- colorAccent is used as the default value for colorControlActivated,
              which is used to tint widgets -->
         <item name="colorAccent">@color/accent</item>
+
+        <item name="android:actionMenuTextColor">@color/bright</item>
+
 
         <!-- You can also set colorControlNormal, colorControlActivated
              colorControlHighlight, and colorSwitchThumbNormal. -->

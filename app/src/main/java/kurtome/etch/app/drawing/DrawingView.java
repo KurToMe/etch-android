@@ -150,7 +150,9 @@ public class DrawingView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         super.onTouchEvent(event);
 
-        mDrawingStrategy.touchEvent(event);
+        if (mDrawingStrategy != null) {
+            mDrawingStrategy.touchEvent(event);
+        }
 //        if (event.getAction() == MotionEvent.ACTION_DOWN) {
 //            // we can safely always pass the action down to
 //            // the drawing because it just preps stuff
@@ -232,11 +234,22 @@ public class DrawingView extends View {
     }
 
     public Bitmap getCopyOfCurrentBitmap() {
+        if (mDrawingStrategy == null) {
+            return null;
+        }
         mDrawingStrategy.flush();
         return mCanvasBitmap.copy(Bitmap.Config.ARGB_8888, false);
     }
 
+    public boolean hasImage() {
+        return mDrawingStrategy != null;
+    }
+
     public byte[] getCurrentImage() {
+        if (mDrawingStrategy == null) {
+            return null;
+        }
+
         mDrawingStrategy.flush();
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         GZIPOutputStream gzipStream = null;
@@ -249,12 +262,15 @@ public class DrawingView extends View {
             return stream.toByteArray();
         }
         catch (IOException e) {
-            logger.e("Unable to get",e);
+            logger.e("Unable to get", e);
             return null;
         }
     }
 
-    public void undoLastDraw()  {
+    public void undoLastDraw() {
+        if (mDrawingStrategy == null) {
+            return;
+        }
         mDrawingStrategy.undoLastDraw();
         invalidate();
     }

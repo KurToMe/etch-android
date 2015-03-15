@@ -1,10 +1,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="kurtome.etch.app.MainActivity" >
 
-    <!--<item android:id="@+id/refresh_map"-->
-        <!--android:title="@string/action_refresh_map"-->
-        <!--android:icon="@drawable/ic_action_refresh"-->
-        <!--android:orderInCategory="100"-->
-        <!--android:showAsAction="ifRoom" />-->
+    <item android:id="@+id/refresh_map"
+        android:title="@string/action_refresh_map"
+        android:icon="@drawable/ic_action_refresh"
+        android:orderInCategory="100"
+        app:showAsAction="always" />
 </menu>

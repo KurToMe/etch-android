@@ -61,10 +61,15 @@ public class MainActivity extends ActionBarActivity {
                     .commit();
         }
 
+        resetActionBar();
+    }
+
+    private void resetActionBar() {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayShowTitleEnabled(false);
         actionBar.setDisplayShowHomeEnabled(true);
         actionBar.setDisplayUseLogoEnabled(true);
+        actionBar.setDisplayHomeAsUpEnabled(false);
         actionBar.setLogo(R.mipmap.ic_launcher);
     }
 
@@ -80,10 +85,11 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         // Unregister everything so there are no memory leaks
         //  and to ensure only one of everything is registered
         mEventBus.unregister(this);
+
+        super.onDestroy();
     }
 
     private boolean isFragmentVisible(String tag) {
@@ -148,6 +154,7 @@ public class MainActivity extends ActionBarActivity {
 
     @Subscribe
     public void handleDrawingComplete(DoneDrawingCommand cmd) {
+        resetActionBar();
         this.popToMap();
     }
 

@@ -59,7 +59,6 @@ public class GoogleMapFragment extends Fragment {
 
     private Location mLocation;
 
-    private MapLocationSelectedEvent mLastSelectedEvent;
     private MapModeChangedEvent.Mode mCurrentMode = MapModeChangedEvent.Mode.MAP;
 
     @Inject Bus mEventBus;
@@ -119,6 +118,11 @@ public class GoogleMapFragment extends Fragment {
         mGoogleMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
+                mGoogleMapView.post(new Runnable(){
+                    public void run(){
+                        removeEtchesFarFromLatLng(mGoogleMap.getCameraPosition().target);
+                    }
+                });
                 cameraChanged();
             }
         });
@@ -163,8 +167,10 @@ public class GoogleMapFragment extends Fragment {
 
                 @Override
                 public void onCancel() {
+
                     cameraChanged();
                     mAnimatingCamera = false;
+
                 }
             });
         }
@@ -180,12 +186,6 @@ public class GoogleMapFragment extends Fragment {
 
         final Handler h = new Handler();
 
-        h.postDelayed(new Runnable(){
-            public void run(){
-                removeEtchesFarFromLatLng(mGoogleMap.getCameraPosition().target);
-                h.postDelayed(this, 1000);
-            }
-        }, 1000);
 
         return mView;
     }
@@ -271,7 +271,7 @@ public class GoogleMapFragment extends Fragment {
                 paddingPx
         );
 
-        mLastSelectedEvent = new MapLocationSelectedEvent();
+        MapLocationSelectedEvent mLastSelectedEvent = new MapLocationSelectedEvent();
         mLastSelectedEvent.setEtchOverlayImage(etchItem);
         mEventBus.post(mLastSelectedEvent);
 
@@ -422,14 +422,14 @@ public class GoogleMapFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-//        if (item.getItemId() == R.id.refresh_map) {
-//            refreshMap();
-//        }
+        if (item.getItemId() == R.id.refresh_map) {
+            refreshMap();
+        }
 
         return super.onOptionsItemSelected(item);
     }
 
-    private static final int MAX_ETCH_GRID_SIZE = 7;
+    private static final int MAX_ETCH_GRID_SIZE = 5;
 
     /**
      * Might only work with odd numbers right now, due to how we calculate offsets etc.
@@ -614,11 +614,6 @@ public class GoogleMapFragment extends Fragment {
     @Produce
     public MapModeChangedEvent produceMapModeChanged() {
         return new MapModeChangedEvent(mCurrentMode);
-    }
-
-    @Produce
-    public MapLocationSelectedEvent produceMapLocationSelected() {
-        return mLastSelectedEvent;
     }
 
     @Subscribe

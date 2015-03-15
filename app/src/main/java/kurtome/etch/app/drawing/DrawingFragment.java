@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.view.*;
 import android.widget.*;
@@ -82,6 +83,10 @@ public class DrawingFragment extends Fragment {
         super.onAttach(activity);
 
         mMainActivity = ObjUtils.cast(activity);
+        ActionBar actionBar = mMainActivity.getSupportActionBar();
+        actionBar.setHomeButtonEnabled(true);
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setLogo(null);
     }
 
     @Override
@@ -103,9 +108,14 @@ public class DrawingFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.save_etch_action) {
-            saveEtch();
-            return true;
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                mEventBus.post(new DoneDrawingCommand());
+                return true;
+            case R.id.save_etch_action:
+                saveEtch();
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -355,33 +365,39 @@ public class DrawingFragment extends Fragment {
 
         if (mCoordinates == null) {
             logger.debug("Unknown location, can't set etch.");
+            mEventBus.post(new DoneDrawingCommand());
             return;
         }
 
-        final byte[] image = mDrawingView.getCurrentImage();
+        if (mDrawingView.hasImage()) {
+            mEventBus.post(new DoneDrawingCommand());
+        }
+        else {
+            final byte[] image = mDrawingView.getCurrentImage();
+            final SaveEtchCommand saveEtchCommand = new SaveEtchCommand();
+            final Bitmap currentBitmap = mDrawingView.getCopyOfCurrentBitmap();
+            saveEtchCommand.setCoordinates(mCoordinates);
+            saveEtchCommand.setImageGzip(image);
 
-        final SaveEtchCommand saveEtchCommand = new SaveEtchCommand();
-        final Bitmap currentBitmap = mDrawingView.getCopyOfCurrentBitmap();
-        saveEtchCommand.setCoordinates(mCoordinates);
-        saveEtchCommand.setImageGzip(image);
 
+            spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
 
-        spiceManager.execute(new SaveEtchRequest(saveEtchCommand), new RequestListener<Void>() {
+                @Override
+                public void onRequestFailure(SpiceException e) {
+                    logger.error("Error getting etch for location {}.", mCoordinates, e);
+                    endLoadingWithError();
+                }
 
-            @Override
-            public void onRequestFailure(SpiceException e) {
-                logger.error("Error getting etch for location {}.", mCoordinates, e);
-                endLoadingWithError();
-            }
+                @Override
+                public void onRequestSuccess(Void v) {
+                    logger.debug("Saved etch {}.", saveEtchCommand);
+                    mEtchOverlayItem.setEtchBitmap(currentBitmap);
+                    endLoading();
+                    mEventBus.post(new DoneDrawingCommand());
+                }
 
-            @Override
-            public void onRequestSuccess(Void v) {
-                logger.debug("Saved etch {}.", saveEtchCommand);
-                mEtchOverlayItem.setEtchBitmap(currentBitmap);
-                endLoading();
-                mEventBus.post(new DoneDrawingCommand());
-            }
-        });
+            });
+        }
     }
 
     private String format(int e6CooridnatePart) {
