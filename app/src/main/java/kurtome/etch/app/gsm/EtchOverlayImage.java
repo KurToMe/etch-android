@@ -1,6 +1,7 @@
 package kurtome.etch.app.gsm;
 
 import android.graphics.*;
+import android.os.AsyncTask;
 import com.google.android.gms.maps.model.*;
 import com.google.common.base.Optional;
 import com.octo.android.robospice.persistence.exception.SpiceException;
@@ -108,12 +109,7 @@ public class EtchOverlayImage {
     public void fetchEtch() {
         mLoading = true;
 
-        Bitmap bitmap = createScaledEtchBitmap(
-                Optional.<Bitmap>absent(),
-                getStatusIconBitmap(),
-                ETCH_MAP_HEIGHT_PX
-        );
-        setGroundOverlayImage(bitmap);
+        new SetBitmapAsOverlayImage().execute( Optional.<Bitmap>absent() );
 
         mMapFragment.spiceManager.execute(new GetEtchRequest(mEtchCoordinates), new RequestListener<Etch>() {
             @Override
@@ -124,17 +120,7 @@ public class EtchOverlayImage {
                 logger.error("Error getting etch for location {}.", mEtchCoordinates, e);
                 onFinishedLoading();
 
-                Bitmap alertBmp = BitmapFactory.decodeResource(
-                        mMapFragment.getResources(),
-                        R.drawable.alert_icon
-                );
-                Bitmap overlayBitmap = createScaledEtchBitmap(
-                        Optional.<Bitmap>absent(),
-                        Optional.of(alertBmp),
-                        ETCH_MAP_HEIGHT_PX
-                );
-
-                setGroundOverlayImage(overlayBitmap);
+                new SetBitmapAsOverlayImage().execute( Optional.<Bitmap>absent() );
             }
 
             @Override
@@ -144,27 +130,62 @@ public class EtchOverlayImage {
                 }
                 onFinishedLoading();
 
-                Bitmap overlayBitmap = getOverlayBitmap(etch);
-
-                setGroundOverlayImage(overlayBitmap);
+                new SetEtchDataAsOverlayImage().execute(etch);
             }
         });
     }
 
-    private void setGroundOverlayImage(Bitmap bitmap) {
+    private class SetEtchDataAsOverlayImage extends AsyncTask<Etch, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Etch... etches) {
+            Etch etch = etches[0];
+
+            final Bitmap overlayBitmap = getOverlayBitmap(etch);
+            final BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(overlayBitmap);
+            mMapFragment.getMapView().post(new Runnable() {
+                @Override
+                public void run() {
+                    setGroundOverlayImage(bitmapDescriptor);
+                }
+            });
+            return null;
+        }
+    }
+
+    private class SetBitmapAsOverlayImage extends AsyncTask<Optional<Bitmap>, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Optional<Bitmap>... etches) {
+            Optional<Bitmap> bitmap = etches[0];
+
+            final BitmapDescriptor bitmapDescriptor = BitmapDescriptorFactory.fromBitmap(createScaledEtchBitmap(
+                    bitmap,
+                    getStatusIconBitmap(),
+                    ETCH_MAP_HEIGHT_PX
+            ));
+            mMapFragment.getMapView().post(new Runnable() {
+                @Override
+                public void run() {
+                    setGroundOverlayImage(bitmapDescriptor);
+                }
+            });
+            return null;
+        }
+    }
+
+    private void setGroundOverlayImage(BitmapDescriptor bitmap) {
         if (mGroundOverlay == null) {
             mGroundOverlay = mMapFragment.getMap().addGroundOverlay(
                     new GroundOverlayOptions()
-                            .image(BitmapDescriptorFactory.fromBitmap(bitmap))
+                            .image(bitmap)
                             .positionFromBounds(mOverlayBounds)
                             .anchor(0, 0)
                             .bearing(0)
             );
         }
         else {
-            mGroundOverlay.setImage(
-                    BitmapDescriptorFactory.fromBitmap(bitmap)
-            );
+            mGroundOverlay.setImage(bitmap);
         }
     }
 
@@ -293,13 +314,7 @@ public class EtchOverlayImage {
     }
 
     public void setEtchBitmap(Bitmap bitmap) {
-        Bitmap bitmapToDraw = createScaledEtchBitmap(
-                Optional.of(bitmap),
-                getStatusIconBitmap(),
-                bitmap.getHeight()
-        );
-
-        setGroundOverlayImage(bitmapToDraw);
+        new SetBitmapAsOverlayImage().execute( Optional.of(bitmap) );
     }
 
     private Optional<RectangleDimensions> calcScaleDimensions(Bitmap bitmap, int srcHeight) {

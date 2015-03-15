@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -435,43 +436,53 @@ public class GoogleMapFragment extends Fragment {
      */
     private static final int MIN_ETCH_GRID_SIZE = 3;
 
-    private void attemptAddOverlaysToMapBasedOnLocation() {
-        if (!isNetworkAvailable()) {
-            if (!mHasToastedNetworkDown) {
-                mHasToastedNetworkDown = true;
-                showToast("No network connection, go find some signal.");
+    private class AttemptAddOverlays implements Runnable {
+
+        @Override
+        public void run() {
+            if (!isNetworkAvailable()) {
+                if (!mHasToastedNetworkDown) {
+                    mHasToastedNetworkDown = true;
+                    showToast("No network connection, go find some signal.");
+                }
             }
-        }
 
-        if (mEtchOverlayManager.hasEtches()) {
-            // already added
-            return;
-        }
+            if (mEtchOverlayManager.hasEtches()) {
+                // already added
+                return;
+            }
 
-        if (mLocation == null) {
-            // don't know where we are
-            return;
-        }
+            if (mLocation == null) {
+                // don't know where we are
+                return;
+            }
 
-        if (mView == null) {
-            return;
-        }
+            if (mView == null) {
+                return;
+            }
 
-        if (mView.getWidth() <= 0) {
-            // map isn't ready
-            return;
-        }
+            if (mView.getWidth() <= 0) {
+                // map isn't ready
+                return;
+            }
 
-        if (mAnimatingCamera) {
-            return;
-        }
+            if (mAnimatingCamera) {
+                return;
+            }
 
-        if (mGoogleMap.getCameraPosition().zoom < MIN_ZOOM_FOR_ETCHES) {
-            return;
-        }
+            if (mGoogleMap.getCameraPosition().zoom < MIN_ZOOM_FOR_ETCHES) {
+                return;
+            }
 
-        LatLng latLng = CoordinateUtils.toLatLng(mLocation);
-        placeEtchOverlaysNearLatLng(latLng);
+            LatLng latLng = CoordinateUtils.toLatLng(mLocation);
+            placeEtchOverlaysNearLatLng(latLng);
+        }
+    }
+
+    private void attemptAddOverlaysToMapBasedOnLocation() {
+        this.mGoogleMapView.post(
+                new AttemptAddOverlays()
+        );
     }
 
     private void placeEtchOverlaysNearLatLng(LatLng latLng) {
@@ -594,6 +605,10 @@ public class GoogleMapFragment extends Fragment {
 
     public GoogleMap getMap() {
         return mGoogleMap;
+    }
+
+    public MapView getMapView() {
+        return mGoogleMapView;
     }
 
     @Produce
