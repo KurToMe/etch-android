@@ -370,9 +370,6 @@ public class DrawingFragment extends Fragment {
         }
 
         if (mDrawingView.hasImage()) {
-            mEventBus.post(new DoneDrawingCommand());
-        }
-        else {
             final byte[] image = mDrawingView.getCurrentImage();
             final SaveEtchCommand saveEtchCommand = new SaveEtchCommand();
             final Bitmap currentBitmap = mDrawingView.getCopyOfCurrentBitmap();
@@ -397,6 +394,9 @@ public class DrawingFragment extends Fragment {
                 }
 
             });
+        }
+        else {
+            mEventBus.post(new DoneDrawingCommand());
         }
     }
 
